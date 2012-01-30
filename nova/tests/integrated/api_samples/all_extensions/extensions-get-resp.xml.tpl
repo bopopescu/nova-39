@@ -195,4 +195,7 @@
   <extension alias="os-instance-actions" updated="%(timestamp)s" namespace="http://docs.openstack.org/compute/ext/instance-actions/api/v1.1" name="InstanceActions">
     <description>%(text)s</description>
   </extension>
+  <extension alias="rax-backup-schedule" updated="%(timestamp)s" namespace="http://docs.openstack.org/ext/backup-schedule/api/v1.1" name="Backup_schedule">
+    <description>%(text)s</description>
+  </extension>
 </extensions>

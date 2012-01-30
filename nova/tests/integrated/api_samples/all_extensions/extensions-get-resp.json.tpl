@@ -519,6 +519,14 @@
             "name": "InstanceActions",
             "namespace": "http://docs.openstack.org/compute/ext/instance-actions/api/v1.1",
             "updated": "%(timestamp)s"
-        }
+        },
+        {
+            "alias": "rax-backup-schedule",
+            "description": "%(text)s",
+            "links": [],
+            "name": "Backup_schedule",
+            "namespace": "http://docs.openstack.org/ext/backup-schedule/api/v1.1",
+            "updated": "%(timestamp)s"
+        },
     ]
 }
