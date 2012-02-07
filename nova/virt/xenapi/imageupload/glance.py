@@ -59,6 +59,7 @@ class GlanceStore(object):
                           'glance_use_ssl': glance_use_ssl,
                           'sr_path': vm_utils.get_sr_path(session),
                           'auth_token': getattr(context, 'auth_token', None),
+                          'project_id': context.project_id,
                           'properties': properties}
 
                 LOG.debug(_("Asking xapi to upload to glance %(vdi_uuids)s as"
