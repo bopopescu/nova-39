@@ -153,6 +153,9 @@
   <extension alias="os-networks-associate" updated="%(timestamp)s" namespace="http://docs.openstack.org/compute/ext/networks_associate/api/v2" name="NetworkAssociationSupport">
     <description>%(text)s</description>
   </extension>
+  <extension alias="os-networksv2" updated="%(timestamp)s" namespace="http://docs.openstack.org/ext/services/api/v1.1" name="OSNetworksV2">
+    <description>%(text)s</description>
+  </extension>
   <extension alias="os-quota-class-sets" updated="%(timestamp)s" namespace="http://docs.openstack.org/compute/ext/quota-classes-sets/api/v1.1" name="QuotaClasses">
     <description>%(text)s</description>
   </extension>
@@ -187,6 +190,9 @@
     <description>%(text)s</description>
   </extension>
   <extension alias="os-virtual-interfaces" updated="%(timestamp)s" namespace="http://docs.openstack.org/compute/ext/virtual_interfaces/api/v1.1" name="VirtualInterfaces">
+    <description>%(text)s</description>
+  </extension>
+  <extension alias="os-virtual-interfacesv2" updated="%(timestamp)s" namespace="http://docs.openstack.org/compute/ext/virtual_interfacesv2/api/v1.1" name="VirtualInterfaces">
     <description>%(text)s</description>
   </extension>
   <extension alias="os-volumes" updated="%(timestamp)s" namespace="http://docs.openstack.org/compute/ext/volumes/api/v1.1" name="Volumes">

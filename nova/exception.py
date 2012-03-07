@@ -167,8 +167,16 @@ class DecryptionFailure(NovaException):
     message = _("Failed to decrypt text: %(reason)s")
 
 
+class VirtualInterfaceCleanupException(NovaException):
+    message = _("Virtual Interface deallocation failed: %(reason)s")
+
+
+class VirtualInterfaceIntegrityException(NovaException):
+    message = _("Virtual Interface has invalid data: %(reason)s")
+
+
 class VirtualInterfaceCreateException(NovaException):
-    message = _("Virtual Interface creation failed")
+    message = _("Virtual Interface creation failed: %(reason)s")
 
 
 class VirtualInterfaceMacAddressException(NovaException):
@@ -498,6 +506,15 @@ class NetworkInUse(NovaException):
     message = _("Network %(network_id)s is still in use.")
 
 
+class AlreadyAttachedToNetwork(NovaException):
+    message = _("Instance already attached to network")
+
+
+class NetworkOverQuota(NovaException):
+    code = 413
+    message = _("Network Quota Error: %(msg)s")
+
+
 class NetworkNotCreated(NovaException):
     message = _("%(req)s is required to create a network.")
 
@@ -508,6 +525,10 @@ class NetworkNotFound(NotFound):
 
 class PortNotFound(NotFound):
     message = _("Port id %(port_id)s could not be found.")
+
+
+class NetworkFoundMultipleTimes(NotFound):
+    message = _("Network %(network_id)s matched multiple networks!")
 
 
 class NetworkNotFoundForBridge(NetworkNotFound):
@@ -533,6 +554,14 @@ class NoNetworksFound(NotFound):
 class NetworkNotFoundForProject(NotFound):
     message = _("Either Network uuid %(network_uuid)s is not present or "
                 "is not assigned to the project %(project_id)s.")
+
+
+class NetworkHostNotSet(NovaException):
+    message = _("Host is not set to the network (%(network_id)s).")
+
+
+class NetworkBusy(NovaException):
+    message = _("Network %(network)s has active ports, cannot delete.")
 
 
 class DatastoreNotFound(NotFound):

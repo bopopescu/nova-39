@@ -1415,7 +1415,8 @@ class API(base.Base):
                 'name': 'display_name',
                 'tenant_id': 'project_id',
                 'flavor': _remap_flavor_filter,
-                'fixed_ip': _remap_fixed_ip_filter}
+                'fixed_ip': _remap_fixed_ip_filter,
+                'ip': 'ip'}
 
         # copy from search_opts, doing various remappings as necessary
         for opt, value in search_opts.iteritems():
@@ -2341,6 +2342,22 @@ class API(base.Base):
     def inject_network_info(self, context, instance):
         """Inject network info for the instance."""
         self.compute_rpcapi.inject_network_info(context, instance=instance)
+
+    @wrap_check_policy
+    @check_instance_lock
+    def create_vifs_for_instance(self, context, instance, network_id):
+        """Creates and hotplugs new VIFs for the instance."""
+        return self.compute_rpcapi.create_vifs_for_instance(context,
+                                                     instance=instance,
+                                                     network_id=network_id)
+
+    @wrap_check_policy
+    @check_instance_lock
+    def delete_vifs_for_instance(self, context, instance, vifs):
+        """Hot unplugs and deletes VIFs from the instance."""
+        self.compute_rpcapi.delete_vifs_for_instance(context,
+                                                     instance=instance,
+                                                     vifs=vifs)
 
     @wrap_check_policy
     @check_instance_lock

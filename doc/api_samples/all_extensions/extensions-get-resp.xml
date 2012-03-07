@@ -216,4 +216,10 @@
   <extension alias="rax-backup-schedule" updated="2012-11-27T00:00:00+00:00" namespace="http://docs.openstack.org/ext/backup-schedule/api/v1.1" name="Backup_schedule">
     <description>Backup scheduling support</description>
   </extension>
+  <extension alias="os-networksv2" updated="2012-11-27T00:00:00+00:00" namespace="http://docs.openstack.org/ext/services/api/v1.1" name="OSNetworksV2">
+    <description>Networking support (custom to Rackspace)</description>
+  </extension>
+  <extension alias="os-virtual-interfacesv2" updated="2012-11-27T00:00:00+00:00" namespace="http://docs.openstack.org/compute/ext/virtual_interfacesv2/api/v1.1" name="VirtualInterfaces">
+    <description>Virtual interface support (custom to Rackspace)</description>
+  </extension>
 </extensions>

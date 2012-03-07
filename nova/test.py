@@ -45,6 +45,7 @@ from nova.openstack.common.db.sqlalchemy import session
 from nova.openstack.common import log as logging
 from nova.openstack.common import timeutils
 from nova import paths
+from nova import quota
 from nova import service
 from nova.tests import conf_fixture
 from nova.tests import policy_fixture
@@ -66,6 +67,8 @@ CONF.set_override('use_stderr', False)
 logging.setup('nova')
 
 _DB_CACHE = None
+
+QUOTAS = quota.QUOTAS
 
 
 class Database(fixtures.Fixture):
@@ -227,6 +230,12 @@ class TestCase(testtools.TestCase):
         self.useFixture(fixtures.EnvironmentVariable('http_proxy'))
         self.policy = self.useFixture(policy_fixture.PolicyFixture())
         CONF.set_override('fatal_exception_format_errors', True)
+        self.addCleanup(self._reset_quotas)
+
+    def _reset_quotas(self):
+        # FIXME(johannes): This is an ugly hack until we can fix extensions
+        # so they can be unloaded to properly isolate tests
+        QUOTAS._resources.pop('networks', None)
 
     def _clear_attrs(self):
         # Delete attributes that don't start with _ so they don't pin

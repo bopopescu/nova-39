@@ -180,8 +180,11 @@ class NetworkRpcAPITestCase(test.TestCase):
                 macs=[], version='1.9')
 
     def test_deallocate_for_instance(self):
-        self._test_network_api('deallocate_for_instance', rpc_method='call',
-                instance_id='fake_id', project_id='fake_id', host='fake_host')
+        self._test_network_api('deallocate_for_instance',
+                               rpc_method='call',
+                               instance_id='fake_id',
+                               project_id='fake_id',
+                               host='fake_host')
 
     def test_add_fixed_ip_to_instance(self):
         self._test_network_api('add_fixed_ip_to_instance', rpc_method='call',

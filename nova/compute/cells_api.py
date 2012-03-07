@@ -514,6 +514,23 @@ class ComputeCellsAPI(compute_api.API):
         super(ComputeCellsAPI, self).inject_network_info(context, instance)
         self._cast_to_cells(context, instance, 'inject_network_info')
 
+    @validate_cell
+    def create_vifs_for_instance(self, context, instance, network_id):
+        """Creates and hotplugs new VIFs for the instance."""
+        super(ComputeCellsAPI, self).create_vifs_for_instance(context,
+                                                              instance,
+                                                              network_id,)
+        return self._call_to_cells(context, instance,
+                                   'create_vifs_for_instance', network_id)
+
+    @validate_cell
+    def delete_vifs_for_instance(self, context, instance, vifs):
+        """Hot unplugs and deletes VIFs from the instance."""
+        super(ComputeCellsAPI, self).delete_vifs_for_instance(context,
+                                                              instance, vifs)
+        self._cast_to_cells(context, instance, 'delete_vifs_for_instance',
+                            vifs)
+
     @wrap_check_policy
     @validate_cell
     def attach_volume(self, context, instance, volume_id, device=None):
