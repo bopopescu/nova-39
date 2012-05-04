@@ -1678,6 +1678,12 @@ class ComputeManager(manager.SchedulerDependentManager):
         """
         context = context.elevated()
 
+        # This is a grievous hack to make usage happy for the moment
+        # We will remove this when their system is fixed. (mdragon)
+        instance = self._instance_update(context,
+                instance['uuid'], launched_at=timeutils.utcnow())
+        # Endhack.
+
         orig_vm_state = instance['vm_state']
         with self._error_out_instance_on_exception(context, instance['uuid']):
             LOG.audit(_("Rebuilding instance"), context=context,
@@ -2264,6 +2270,12 @@ class ComputeManager(manager.SchedulerDependentManager):
         if not migration:
             migration = self.conductor_api.migration_get(context, migration_id)
 
+        # This is a grievous hack to make usage happy for the moment
+        # We will remove this when their system is fixed. (mdragon)
+        instance = self._instance_update(context, instance['uuid'],
+                launched_at=timeutils.utcnow())
+        # Endhack.
+
         # NOTE(comstud): A revert_resize is essentially a resize back to
         # the old size, so we need to send a usage event here.
         self.conductor_api.notify_usage_exists(
@@ -2446,6 +2458,12 @@ class ComputeManager(manager.SchedulerDependentManager):
             node = self.driver.get_available_nodes()[0]
             LOG.debug(_("No node specified, defaulting to %(node)s") %
                       locals())
+
+        # This is a grievous hack to make usage happy for the moment
+        # We will remove this when their system is fixed. (mdragon)
+        instance = self._instance_update(context,
+                instance['uuid'], launched_at=timeutils.utcnow())
+        # Endhack.
 
         with self._error_out_instance_on_exception(context, instance['uuid'],
                                                    reservations):

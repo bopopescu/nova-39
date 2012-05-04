@@ -8521,8 +8521,8 @@ class ComputeRescheduleResizeOrReraiseTestCase(BaseTestCase):
                 mox.IgnoreArg()).AndRaise(test.TestingException("Original"))
 
         self.compute._reschedule_resize_or_reraise(mox.IgnoreArg(), None,
-                self.instance, mox.IgnoreArg(), self.instance_type, None, None,
-                None)
+                mox.IgnoreArg(), mox.IgnoreArg(), self.instance_type, None,
+                None, None)
 
         self.mox.ReplayAll()
 
