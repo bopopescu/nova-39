@@ -37,6 +37,7 @@ import tempfile
 import time
 from xml.sax import saxutils
 
+from Crypto.PublicKey import RSA
 import netaddr
 
 from oslo.config import cfg
@@ -1098,3 +1099,13 @@ def check_string_length(value, name, min_length=0, max_length=None):
         msg = _("%(name)s has more than %(max_length)s "
                     "characters.") % locals()
         raise exception.InvalidInput(message=msg)
+
+
+def encrypt_rsa(public_key, plain_text):
+    if 'importKey' not in dir(RSA):
+        # PyCrypto2.1 compat
+        import nova.compat.pycrypto21
+        nova.compat.pycrypto21.monkey_patch()
+
+    # NOTE(sirp): K-param is not used by RSA
+    return RSA.importKey(public_key).encrypt(plain_text, None)[0]
