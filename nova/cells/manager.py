@@ -379,3 +379,23 @@ class CellsManager(manager.Manager):
                 instance['cell_name'], instance_uuid, console_port,
                 console_type)
         return response.value_or_raise()
+
+    def bdm_create(self, ctxt, bdm):
+        """BDM was created for instance in this cell.  Tell the API cell."""
+        self.msg_runner.bdm_create(ctxt, bdm)
+
+    def bdm_update(self, ctxt, bdm, create=False):
+        """BDM was updated for instance in this cell.  Tell the API cell.
+        create can be True if API cell should create the BDM if it couldn't
+        find it.
+        """
+        self.msg_runner.bdm_update(ctxt, bdm, create=create)
+
+    def bdm_destroy(self, ctxt, instance_uuid, device_name=None,
+                    volume_id=None):
+        """BDM was destroyed for instance in this cell.  Tell the API cell.
+        device_name or volume_id can be None, but not both.
+        """
+        self.msg_runner.bdm_destroy(ctxt, instance_uuid,
+                                    device_name=device_name,
+                                    volume_id=volume_id)

@@ -946,6 +946,60 @@ class _BroadcastMessageMethods(_BaseMessageMethods):
         self.consoleauth_rpcapi.delete_tokens_for_instance(message.ctxt,
                                                            instance_uuid)
 
+    def bdm_create(self, message, bdm):
+        """Create a Block Device Mapping in API cells."""
+        if not self._at_the_top():
+            return
+        items_to_remove = ['id']
+        for key in items_to_remove:
+            bdm.pop(key, None)
+        self.db.block_device_mapping_create(message.ctxt, bdm,
+                                            update_cells=False)
+
+    def bdm_update(self, message, bdm, create):
+        """Update a Block Device Mapping in API cells."""
+        if not self._at_the_top():
+            return
+        items_to_remove = ['id']
+        for key in items_to_remove:
+            bdm.pop(key, None)
+        if create:
+            self.db.block_device_mapping_update_or_create(message.ctxt,
+                                                          bdm,
+                                                          update_cells=False)
+            return
+        # Unfortunately this update call wants BDM ID... but we don't know
+        # what it is in this cell.  Search for it.. try matching either
+        # device_name or volume_id.
+        dev_name = bdm['device_name']
+        vol_id = bdm['volume_id']
+        instance_bdms = self.db.block_device_mapping_get_all_by_instance(
+                message.ctxt, bdm['instance_uuid'])
+        for instance_bdm in instance_bdms:
+            if dev_name and instance_bdm['device_name'] == bdm:
+                break
+            if vol_id and instance_bdm['volume_id'] == vol_id:
+                break
+        else:
+            raise Exception(_("Can't update BDM: %s") % bdm)
+        self.db.block_device_mapping_update(message.ctxt,
+                                            instance_bdm['id'], bdm,
+                                            update_cells=False)
+
+    def bdm_destroy(self, message, instance_uuid, device_name, volume_id):
+        """Destroy a Block Device Mapping in API cells by device name
+        or volume_id.  device_name or volume_id can be None, but not both.
+        """
+        if not self._at_the_top():
+            return
+        if device_name:
+            self.db.block_device_mapping_destroy_by_instance_and_device(
+                    message.ctxt, instance_uuid, device_name,
+                    update_cells=False)
+            return
+        self.db.block_device_mapping_destroy_by_instance_and_volume(
+                message.ctxt, instance_uuid, volume_id, update_cells=False)
+
 
 class _BWUpdateMessage(_BroadcastMessage):
     """A BW Update Broadcast Message.  Setting the message_type below
@@ -1332,6 +1386,31 @@ class MessageRunner(object):
                                    method_kwargs, 'down',
                                    cell_name, need_response=True)
         return message.process()
+
+    def bdm_create(self, ctxt, bdm):
+        """Create a BDM at top level cell."""
+        message = _BroadcastMessage(self, ctxt, 'bdm_create',
+                                    dict(bdm=bdm),
+                                    'up', run_locally=False)
+        message.process()
+
+    def bdm_update(self, ctxt, bdm, create=False):
+        """Update a BDM at top level cell."""
+        message = _BroadcastMessage(self, ctxt, 'bdm_update',
+                                    dict(bdm=bdm, create=create),
+                                    'up', run_locally=False)
+        message.process()
+
+    def bdm_destroy(self, ctxt, instance_uuid, device_name=None,
+                    volume_id=None):
+        """Destroy a BDM at top level cell."""
+        method_kwargs = dict(instance_uuid=instance_uuid,
+                             device_name=device_name,
+                             volume_id=volume_id)
+        message = _BroadcastMessage(self, ctxt, 'bdm_destroy',
+                                    method_kwargs,
+                                    'up', run_locally=False)
+        message.process()
 
     @staticmethod
     def get_message_types():

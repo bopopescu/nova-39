@@ -3770,6 +3770,8 @@ class VolumeAttachmentsSampleJsonTest(ServersSampleBase):
                               response, 200)
 
     def test_volume_attachment_delete(self):
+        self.stubs.Set(cinder.API, 'get', lambda *a, **k: {})
+
         server_id = self._post_server()
         attach_id = "a26887c6-c47b-4654-abb5-dfadf7d3f803"
         self._stub_compute_api_get_instance_bdms(server_id)

@@ -50,12 +50,13 @@ class CellsAPI(rpc_proxy.RpcProxy):
               action_events_get()
         1.6 - Adds consoleauth_delete_tokens() and validate_console_port()
         1.7 - Adds service_update()
+              and bdm_create(), bdm_update(), and bdm_destroy()
     '''
     BASE_RPC_API_VERSION = '1.0'
 
     def __init__(self):
         super(CellsAPI, self).__init__(topic=CONF.cells.topic,
-                default_version=self.BASE_RPC_API_VERSION)
+            default_version=self.BASE_RPC_API_VERSION)
 
     def cast_compute_api_method(self, ctxt, cell_name, method,
             *args, **kwargs):
@@ -278,3 +279,26 @@ class CellsAPI(rpc_proxy.RpcProxy):
                               console_port=console_port,
                               console_type=console_type),
                 version='1.6')
+
+    def bdm_create(self, ctxt, bdm):
+        """Broadcast upwards that a BDM was created for an instance."""
+        self.cast(ctxt, self.make_msg('bdm_create', bdm=bdm), version='1.7')
+
+    def bdm_update(self, ctxt, bdm, create=False):
+        """Broadcast upwards that a BDM was updated for an instance.
+        'create' should be True if the BDM should be created if it's not
+        found when going to update.
+        """
+        self.cast(ctxt, self.make_msg('bdm_update', bdm=bdm, create=create),
+                  version='1.7')
+
+    def bdm_destroy(self, ctxt, instance_uuid, device_name=None,
+                    volume_id=None):
+        """Broadcast upwards that a BDM was destroyed.  One of device_name
+        or volume_id should be specified.
+        """
+        self.cast(ctxt, self.make_msg('bdm_destroy',
+                                      instance_uuid=instance_uuid,
+                                      device_name=device_name,
+                                      volume_id=volume_id),
+                  version='1.7')

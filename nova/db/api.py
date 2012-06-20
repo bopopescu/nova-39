@@ -1016,20 +1016,43 @@ def ec2_snapshot_create(context, snapshot_id, forced_id=None):
 ####################
 
 
-def block_device_mapping_create(context, values):
+def block_device_mapping_create(context, values, update_cells=True):
     """Create an entry of block device mapping."""
-    return IMPL.block_device_mapping_create(context, values)
+    rv = IMPL.block_device_mapping_create(context, values)
+    if update_cells:
+        try:
+            cells_rpcapi.CellsAPI().block_device_mapping_create(context,
+                    values)
+        except Exception:
+            LOG.exception(_("Failed to notify cells of BDM create"))
+    return rv
 
 
-def block_device_mapping_update(context, bdm_id, values):
+def block_device_mapping_update(context, bdm_id, values, update_cells=True):
     """Update an entry of block device mapping."""
-    return IMPL.block_device_mapping_update(context, bdm_id, values)
+    rv = IMPL.block_device_mapping_update(context, bdm_id, values)
+    if update_cells:
+        try:
+            # We can't update cells by BDM ID.  We need more
+            # information.
+            bdm = IMPL.block_device_mapping_get_by_id(context, bdm_id)
+            cells_rpcapi.CellsAPI().bdm_update(context, bdm)
+        except Exception:
+            LOG.exception(_("Failed to notify cells of BDM update"))
+    return rv
 
 
-def block_device_mapping_update_or_create(context, values):
+def block_device_mapping_update_or_create(context, values, update_cells=True):
     """Update an entry of block device mapping.
     If not existed, create a new entry"""
-    return IMPL.block_device_mapping_update_or_create(context, values)
+    rv = IMPL.block_device_mapping_update_or_create(context, values)
+    if update_cells:
+        try:
+            cells_rpcapi.CellsAPI().bdm_update(context, values,
+                                               create=True)
+        except Exception:
+            LOG.exception(_("Failed to notify cells of BDM update or create"))
+    return rv
 
 
 def block_device_mapping_get_all_by_instance(context, instance_uuid):
@@ -1038,23 +1061,41 @@ def block_device_mapping_get_all_by_instance(context, instance_uuid):
                                                          instance_uuid)
 
 
+# TODO(clayg): this method is only used in tests near as I can tell, and it
+# scares me because I don't know if bmd_id will match between cells
 def block_device_mapping_destroy(context, bdm_id):
     """Destroy the block device mapping."""
     return IMPL.block_device_mapping_destroy(context, bdm_id)
 
 
 def block_device_mapping_destroy_by_instance_and_device(context, instance_uuid,
-                                                        device_name):
+                                                        device_name,
+                                                        update_cells=True):
     """Destroy the block device mapping."""
-    return IMPL.block_device_mapping_destroy_by_instance_and_device(
+    rv = IMPL.block_device_mapping_destroy_by_instance_and_device(
         context, instance_uuid, device_name)
+    if update_cells:
+        try:
+            cells_rpcapi.CellsAPI().bdm_destroy(context, instance_uuid,
+                                                device_name=device_name)
+        except Exception:
+            LOG.exception(_("Failed to notify cells of BDM destroy device"))
+    return rv
 
 
 def block_device_mapping_destroy_by_instance_and_volume(context, instance_uuid,
-                                                        volume_id):
+                                                        volume_id,
+                                                        update_cells=True):
     """Destroy the block device mapping."""
-    return IMPL.block_device_mapping_destroy_by_instance_and_volume(
+    rv = IMPL.block_device_mapping_destroy_by_instance_and_volume(
         context, instance_uuid, volume_id)
+    if update_cells:
+        try:
+            cells_rpcapi.CellsAPI().bdm_destroy(context, instance_uuid,
+                                                volume_id=volume_id)
+        except Exception:
+            LOG.exception(_("Failed to notify cells of BDM destroy volume"))
+    return rv
 
 
 ####################
