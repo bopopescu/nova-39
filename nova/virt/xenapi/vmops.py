@@ -72,6 +72,16 @@ xenapi_vmops_opts = [
     cfg.StrOpt('image_activation_file',
                 default=None,
                 help=_('JSON file containing image activation configuration')),
+    cfg.StrOpt('provider',
+               default='Rackspace',
+               help=_('Set the provider name.  Defaults to "Rackspace".')),
+    cfg.StrOpt('region',
+               default=None,
+               help=_('Region compute host is in')),
+    cfg.StrOpt('ip_whitelist_file',
+               default=None,
+               help=_('File containing a list of IP addresses to whitelist '
+                      'on managed hosts')),
     ]
 
 CONF = cfg.CONF
@@ -476,6 +486,10 @@ class VMOps(object):
             self.inject_instance_metadata(instance, vm_ref)
 
         @step
+        def inject_provider_data_step(undo_mgr, vm_ref):
+            self.inject_provider_data(instance, vm_ref, context)
+
+        @step
         def prepare_security_group_filters_step(undo_mgr):
             try:
                 self.firewall_driver.setup_basic_filtering(
@@ -523,6 +537,7 @@ class VMOps(object):
             attach_disks_step(undo_mgr, vm_ref, vdis, disk_image_type)
             setup_network_step(undo_mgr, vm_ref, vdis)
             inject_metadata_step(undo_mgr, vm_ref)
+            inject_provider_data_step(undo_mgr, vm_ref)
             prepare_security_group_filters_step(undo_mgr)
 
             if rescue:
@@ -550,7 +565,7 @@ class VMOps(object):
         # configdrive.
         if not configdrive.required_by(instance):
             self.inject_instance_metadata(instance, vm_ref)
-
+        self.inject_provider_data(instance, vm_ref, context)
         return vm_ref
 
     def _setup_vm_networking(self, instance, vm_ref, vdis, network_info,
@@ -1633,6 +1648,34 @@ class VMOps(object):
 
         LOG.debug(_("Injecting hostname to xenstore"), instance=instance)
         self._add_to_param_xenstore(vm_ref, 'vm-data/hostname', hostname)
+
+    def inject_provider_data(self, instance, vm_ref, context):
+        """Inject provider data for the instance into the xenstore."""
+
+        # Store region and roles
+        self._add_to_param_xenstore(vm_ref, 'vm-data/provider_data/provider',
+                                    CONF.provider or '')
+        self._add_to_param_xenstore(vm_ref, 'vm-data/provider_data/region',
+                                    CONF.region or '')
+        self._add_to_param_xenstore(vm_ref, 'vm-data/provider_data/roles',
+                                    jsonutils.dumps(context.roles))
+
+        # Now build up the IP whitelist data
+        location = 'vm-data/provider_data/ip_whitelist'
+        self._add_to_param_xenstore(vm_ref, location, '')
+        if CONF.ip_whitelist_file:
+            idx = 0
+            with open(CONF.ip_whitelist_file) as f:
+                for entry in f:
+                    entry = entry.strip()
+
+                    # Skip blank lines and comments
+                    if not entry or entry[0] == '#':
+                        continue
+
+                    self._add_to_param_xenstore(vm_ref, '%s/%s' %
+                                                (location, idx), entry)
+                    idx += 1
 
     def _write_to_xenstore(self, instance, path, value, vm_ref=None):
         """
