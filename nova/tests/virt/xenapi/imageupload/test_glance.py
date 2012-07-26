@@ -62,6 +62,7 @@ class TestGlanceStore(test.TestCase):
                   'sr_path': sr_path,
                   'auth_token': 'foobar',
                   'project_id': 'project',
+                  'max_size': 0,
                   'properties': properties}
         session = self.mox.CreateMockAnything()
         session.call_plugin_serialized('glance', 'upload_vhd', **params)

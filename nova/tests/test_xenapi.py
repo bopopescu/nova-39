@@ -523,7 +523,7 @@ class XenAPIVMTestCase(stubs.XenAPITestBase):
         self.fake_upload_called = False
 
         def fake_image_upload(_self, ctx, session, inst, vdi_uuids,
-                              img_id):
+                              img_id, max_size=None):
             self.fake_upload_called = True
             self.assertEqual(ctx, self.context)
             self.assertEqual(inst, instance)
@@ -563,6 +563,32 @@ class XenAPIVMTestCase(stubs.XenAPITestBase):
             self.assert_(not name_label.endswith('snapshot'))
 
         self.assertTrue(self.fake_upload_called)
+
+    def test_snapshot_size_too_large(self):
+        stubs.stubout_instance_snapshot(self.stubs)
+        stubs.stubout_is_snapshot(self.stubs)
+        # Stubbing out firewall driver as previous stub sets alters
+        # xml rpc result parsing
+        stubs.stubout_firewall_driver(self.stubs, self.conn)
+        instance = self._create_instance()
+        image_service = fake_image.FakeImageService()
+        image_service.create(None, {'id': 'fakesnapshot123',
+                                    'status': 'queued'})
+
+        def fake_upload(*args, **kwargs):
+            raise xenapi_fake.Failure([None, None, 'VHDsTooLargeError'])
+
+        def fake_update_task_state(*args, **kwargs):
+            pass
+
+        self.stubs.Set(glance.GlanceStore, 'upload_image',
+                       fake_upload)
+        self.flags(max_snapshot_size=100)
+
+        self.conn.snapshot(self.context, instance, 'fakesnapshot123',
+                fake_update_task_state)
+        snapshot_image = image_service.show(None, 'fakesnapshot123')
+        self.assertEqual(snapshot_image['status'], 'error')
 
     def create_vm_record(self, conn, os_type, name):
         instances = conn.list_instances()

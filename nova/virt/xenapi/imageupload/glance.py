@@ -30,7 +30,8 @@ CONF.import_opt('glance_num_retries', 'nova.image.glance')
 
 class GlanceStore(object):
 
-    def upload_image(self, context, session, instance, vdi_uuids, image_id):
+    def upload_image(self, context, session, instance, vdi_uuids, image_id,
+                     max_size=0):
         """Requests that the Glance plugin bundle the specified VDIs and
         push them into Glance using the specified human-friendly name.
         """
@@ -60,6 +61,7 @@ class GlanceStore(object):
                           'sr_path': vm_utils.get_sr_path(session),
                           'auth_token': getattr(context, 'auth_token', None),
                           'project_id': context.project_id,
+                          'max_size': max_size,
                           'properties': properties}
 
                 LOG.debug(_("Asking xapi to upload to glance %(vdi_uuids)s as"
