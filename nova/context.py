@@ -47,7 +47,8 @@ class RequestContext(object):
                  roles=None, remote_address=None, timestamp=None,
                  request_id=None, auth_token=None, overwrite=True,
                  quota_class=None, user_name=None, project_name=None,
-                 service_catalog=None, instance_lock_checked=False, **kwargs):
+                 service_catalog=None, instance_lock_checked=False,
+                 glance_api_servers=None, **kwargs):
         """
         :param read_deleted: 'no' indicates deleted records are hidden, 'yes'
             indicates deleted records are visible, 'only' indicates that
@@ -94,9 +95,14 @@ class RequestContext(object):
         self.quota_class = quota_class
         self.user_name = user_name
         self.project_name = project_name
+
+        # client can specify preferred Glance API servers to use:
+        self.glance_api_servers = glance_api_servers
+
         self.is_admin = is_admin
         if self.is_admin is None:
             self.is_admin = policy.check_is_admin(self)
+
         if overwrite or not hasattr(local.store, 'context'):
             self.update_store()
 
@@ -134,7 +140,8 @@ class RequestContext(object):
                 'project_name': self.project_name,
                 'instance_lock_checked': self.instance_lock_checked,
                 'tenant': self.tenant,
-                'user': self.user}
+                'user': self.user,
+                'glance_api_servers': self.glance_api_servers}
 
     @classmethod
     def from_dict(cls, values):
