@@ -65,6 +65,7 @@ class CellsScheduler(base.Base):
         super(CellsScheduler, self).__init__()
         self.msg_runner = msg_runner
         self.state_manager = msg_runner.state_manager
+        self.cells_config = self.state_manager.cells_config
         self.compute_api = compute.API()
         self.scheduler_rpcapi = scheduler_rpcapi.SchedulerAPI()
         self.filter_handler = filters.CellFilterHandler()
@@ -133,6 +134,7 @@ class CellsScheduler(base.Base):
 
         filter_properties = copy.copy(host_sched_kwargs['filter_properties'])
         filter_properties.update({'context': ctxt,
+                              'cells_config': self.cells_config,
                               'scheduler': self,
                               'routing_path': routing_path,
                               'request_spec': request_spec})

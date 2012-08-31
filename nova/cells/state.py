@@ -22,6 +22,7 @@ import functools
 
 from oslo.config import cfg
 
+from nova.cells import cfg as cells_cfg
 from nova.cells import rpc_driver
 from nova import context
 from nova.db import base
@@ -115,6 +116,7 @@ class CellStateManager(base.Base):
             cell_state_cls = CellState
         self.cell_state_cls = cell_state_cls
         self.my_cell_state = cell_state_cls(CONF.cells.name, is_me=True)
+        self.cells_config = cells_cfg.CellsConfig()
         self.parent_cells = {}
         self.child_cells = {}
         self.last_cell_db_check = datetime.datetime.min

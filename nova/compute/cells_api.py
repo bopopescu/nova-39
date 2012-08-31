@@ -17,6 +17,7 @@
 
 from nova import availability_zones
 from nova import block_device
+from nova.cells import cfg as cells_config
 from nova.cells import rpcapi as cells_rpcapi
 from nova.cells import utils as cells_utils
 from nova.compute import api as compute_api
@@ -90,11 +91,11 @@ class ComputeCellsAPI(compute_api.API):
         self.compute_rpcapi = ComputeRPCAPINoOp()
         # Redirect scheduler run_instance to cells.
         self.scheduler_rpcapi = SchedulerRPCAPIRedirect(self.cells_rpcapi)
+        self._cells_config = cells_config.CellsConfig()
 
-    def _cell_read_only(self, cell_name):
+    def _cell_read_only(self, cell_name, context=None):
         """Is the target cell in a read-only mode?"""
-        # FIXME(comstud): Add support for this.
-        return False
+        return self._cells_config.cell_read_only(cell_name, context)
 
     def _validate_cell(self, instance, method):
         cell_name = instance['cell_name']
