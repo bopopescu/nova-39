@@ -34,7 +34,7 @@ class TestWeighedHost(test.TestCase):
     def test_all_weighers(self):
         classes = weights.all_weighers()
         class_names = [cls.__name__ for cls in classes]
-        self.assertEqual(len(classes), 1)
+        self.assertTrue(len(classes) > 1)
         self.assertIn('RAMWeigher', class_names)
 
 
