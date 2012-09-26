@@ -266,6 +266,25 @@ def wrap_instance_event(function):
     return decorated_function
 
 
+def wrap_migration_error(function):
+    """Wrap a migration function, setting migration to 'error' if exception."""
+
+    @functools.wraps(function)
+    def decorated_function(self, context, *args, **kwargs):
+        try:
+            function(self, context, *args, **kwargs)
+        except Exception as error:
+            with excutils.save_and_reraise_exception():
+                migration_id = kwargs.get('migration_id')
+
+                if migration_id:
+                    self.db.migration_update(context,
+                                             migration_id,
+                                             {'status': 'error'})
+
+    return decorated_function
+
+
 def _get_image_meta(context, image_ref):
     image_service, image_id = glance.get_remote_image_service(context,
                                                               image_ref)
@@ -2365,8 +2384,8 @@ class ComputeManager(manager.SchedulerDependentManager):
                     migration_ref, image, instance_type, reservations)
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
-    @reverts_task_state
     @wrap_instance_event
+    @wrap_migration_error
     @wrap_instance_fault
     def prep_resize(self, context, image, instance, instance_type,
                     reservations=None, request_spec=None,
@@ -2443,8 +2462,8 @@ class ComputeManager(manager.SchedulerDependentManager):
             raise exc_info[0], exc_info[1], exc_info[2]
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
-    @reverts_task_state
     @wrap_instance_event
+    @wrap_migration_error
     @wrap_instance_fault
     def resize_instance(self, context, instance, image,
                         reservations=None, migration=None, migration_id=None,
@@ -2582,8 +2601,8 @@ class ComputeManager(manager.SchedulerDependentManager):
             network_info=network_info)
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
-    @reverts_task_state
     @wrap_instance_event
+    @wrap_migration_error
     @wrap_instance_fault
     def finish_resize(self, context, disk_info, image, instance,
                       reservations=None, migration=None, migration_id=None):

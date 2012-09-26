@@ -312,7 +312,10 @@ class ComputeCellsAPI(compute_api.API):
                 **kwargs)
         self._cast_to_cells(context, instance, 'evacuate', *args, **kwargs)
 
-    @check_instance_state(vm_state=[vm_states.RESIZED])
+    # HACK(johannes): We allow reverts from ERROR now as well. Instead of
+    # complicating the logic here checking vm_state and task_state, lean
+    # on the superclass implementation to do that for us
+    #@check_instance_state(vm_state=[vm_states.RESIZED])
     @validate_cell
     def revert_resize(self, context, instance):
         """Reverts a resize, deleting the 'new' instance in the process."""
