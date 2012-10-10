@@ -3761,7 +3761,9 @@ class ComputeManager(manager.SchedulerDependentManager):
                     try:
                         self.conductor_api.notify_usage_exists(
                             context, instance,
-                            ignore_missing_network_data=False)
+                            ignore_missing_network_data=False,
+                            include_bandwidth=True
+                            )
                         successes += 1
                     except Exception:
                         LOG.exception(_('Failed to generate usage '

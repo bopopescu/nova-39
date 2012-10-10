@@ -465,7 +465,7 @@ class _BaseTestCase(object):
         info = {
             'audit_period_beginning': 'start',
             'audit_period_ending': 'end',
-            'bandwidth': 'bw_usage',
+            'bandwidth': {},
             'image_meta': {},
             'extra': 'info',
             }
@@ -474,12 +474,9 @@ class _BaseTestCase(object):
             }
 
         self.mox.StubOutWithMock(notifications, 'audit_period_bounds')
-        self.mox.StubOutWithMock(notifications, 'bandwidth_usage')
         self.mox.StubOutWithMock(compute_utils, 'notify_about_instance_usage')
 
         notifications.audit_period_bounds(False).AndReturn(('start', 'end'))
-        notifications.bandwidth_usage(instance, 'start', True).AndReturn(
-            'bw_usage')
         compute_utils.notify_about_instance_usage(self.context, instance,
                                                   'exists',
                                                   system_metadata={},
