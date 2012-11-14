@@ -846,6 +846,9 @@ class QuantumManager(manager.SchedulerDependentManager):
 
     def _update_rxtx_factor(self, tenant_id, network_id, interface_id,
                             rxtx_factor):
+        # FIXME(comstud): The below code causes port to disappear and not
+        # come back
+        return
         port_id = self.q_conn.get_port_by_attachment(tenant_id,
                                                      network_id,
                                                      interface_id)
