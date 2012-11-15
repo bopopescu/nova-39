@@ -29,6 +29,10 @@ from nova.tests.cells import fakes
 
 CONF = cfg.CONF
 CONF.import_opt('scheduler_retries', 'nova.cells.scheduler', group='cells')
+CONF.import_opt('scheduler_filter_classes', 'nova.cells.scheduler',
+                group='cells')
+CONF.import_opt('scheduler_weight_classes', 'nova.cells.scheduler',
+                group='cells')
 
 
 class CellsSchedulerTestCase(test.TestCase):
@@ -36,6 +40,8 @@ class CellsSchedulerTestCase(test.TestCase):
 
     def setUp(self):
         super(CellsSchedulerTestCase, self).setUp()
+        self.flags(scheduler_filter_classes=[], scheduler_weight_classes=[],
+                   group='cells')
         fakes.init(self)
         self.msg_runner = fakes.get_message_runner('api-cell')
         self.scheduler = self.msg_runner.scheduler
@@ -109,7 +115,8 @@ class CellsSchedulerTestCase(test.TestCase):
         self.stubs.Set(self.msg_runner, 'schedule_run_instance',
                 msg_runner_schedule_run_instance)
 
-        host_sched_kwargs = {'request_spec': self.request_spec}
+        host_sched_kwargs = {'request_spec': self.request_spec,
+                             'filter_properties': {}}
         self.msg_runner.schedule_run_instance(self.ctxt,
                 self.my_cell_state, host_sched_kwargs)
 
@@ -138,6 +145,7 @@ class CellsSchedulerTestCase(test.TestCase):
                        'run_instance', fake_rpc_run_instance)
 
         host_sched_kwargs = {'request_spec': self.request_spec,
+                             'filter_properties': {},
                              'other': 'stuff'}
         self.msg_runner.schedule_run_instance(self.ctxt,
                 self.my_cell_state, host_sched_kwargs)
@@ -149,7 +157,8 @@ class CellsSchedulerTestCase(test.TestCase):
     def test_run_instance_retries_when_no_cells_avail(self):
         self.flags(scheduler_retries=7, group='cells')
 
-        host_sched_kwargs = {'request_spec': self.request_spec}
+        host_sched_kwargs = {'request_spec': self.request_spec,
+                             'filter_properties': {}}
 
         call_info = {'num_tries': 0, 'errored_uuids': []}
 
@@ -177,7 +186,8 @@ class CellsSchedulerTestCase(test.TestCase):
     def test_run_instance_on_random_exception(self):
         self.flags(scheduler_retries=7, group='cells')
 
-        host_sched_kwargs = {'request_spec': self.request_spec}
+        host_sched_kwargs = {'request_spec': self.request_spec,
+                             'filter_properties': {}}
 
         call_info = {'num_tries': 0,
                      'errored_uuids1': [],

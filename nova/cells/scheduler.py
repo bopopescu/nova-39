@@ -16,11 +16,13 @@
 """
 Cells Scheduler
 """
-import random
+import copy
 import time
 
 from oslo.config import cfg
 
+from nova.cells import filters
+from nova.cells import weights
 from nova import compute
 from nova.compute import instance_actions
 from nova.compute import utils as compute_utils
@@ -31,6 +33,16 @@ from nova.openstack.common import log as logging
 from nova.scheduler import rpcapi as scheduler_rpcapi
 
 cell_scheduler_opts = [
+        cfg.ListOpt('scheduler_filter_classes',
+                default=['nova.cells.filters.all_filters'],
+                help='Filter classes the cells scheduler should use.  '
+                        'An entry of "nova.cells.filters.standard_filters"'
+                        'maps to all cells filters included with nova.'),
+        cfg.ListOpt('scheduler_weight_classes',
+                default=['nova.cells.weights.all_weighers'],
+                help='Weigher classes the cells scheduler should use.  '
+                        'An entry of "nova.cells.weights.standard_weighters"'
+                        'maps to all cell weighters included with nova.'),
         cfg.IntOpt('scheduler_retries',
                 default=10,
                 help='How many retries when no cells are available.'),
@@ -55,6 +67,12 @@ class CellsScheduler(base.Base):
         self.state_manager = msg_runner.state_manager
         self.compute_api = compute.API()
         self.scheduler_rpcapi = scheduler_rpcapi.SchedulerAPI()
+        self.filter_handler = filters.CellFilterHandler()
+        self.filter_classes = self.filter_handler.get_matching_classes(
+                CONF.cells.scheduler_filter_classes)
+        self.weight_handler = weights.CellWeightHandler()
+        self.weigher_classes = self.weight_handler.get_matching_classes(
+                CONF.cells.scheduler_weight_classes)
 
     def _create_instances_here(self, ctxt, request_spec):
         instance_values = request_spec['instance_properties']
@@ -86,38 +104,90 @@ class CellsScheduler(base.Base):
             cells.add(our_cell)
         return cells
 
+    def _filter_cells(self, cells, filter_properties):
+        for filter_cls in self.filter_classes:
+            filter_inst = filter_cls()
+            fn = getattr(filter_inst, 'filter_cells')
+            if not fn:
+                continue
+            filter_response = fn(cells, filter_properties)
+            if not filter_response:
+                continue
+            if 'action' in filter_response:
+                return filter_response
+            if 'drop' in filter_response:
+                for cell in filter_response.get('drop', []):
+                    try:
+                        cells.remove(cell)
+                    except KeyError:
+                        pass
+        return None
+
     def _run_instance(self, message, host_sched_kwargs):
         """Attempt to schedule instance(s).  If we have no cells
         to try, raise exception.NoCellsAvailable
         """
         ctxt = message.ctxt
+        routing_path = message.routing_path
         request_spec = host_sched_kwargs['request_spec']
+
+        filter_properties = copy.copy(host_sched_kwargs['filter_properties'])
+        filter_properties.update({'context': ctxt,
+                              'scheduler': self,
+                              'routing_path': routing_path,
+                              'request_spec': request_spec})
 
         # The message we might forward to a child cell
         cells = self._get_possible_cells()
+        filter_resp = self._filter_cells(cells, filter_properties)
+        if filter_resp and 'action' in filter_resp:
+            if filter_resp['action'] == 'direct_route':
+                target = filter_resp['target']
+                if target == routing_path:
+                    # Ah, it's for me.
+                    cells = [self.state_manager.get_my_state()]
+                else:
+                    self.msg_runner.schedule_run_instance(ctxt, target,
+                                                          host_sched_kwargs)
+                    return
         if not cells:
             raise exception.NoCellsAvailable()
-        cells = list(cells)
-
-        # Random selection for now
-        random.shuffle(cells)
-        target_cell = cells[0]
 
         LOG.debug(_("Scheduling with routing_path=%(routing_path)s"),
                 locals())
 
-        if target_cell.is_me:
-            # Need to create instance DB entries as the host scheduler
-            # expects that the instance(s) already exists.
-            self._create_instances_here(ctxt, request_spec)
-            # Need to record the create action in the db as the scheduler
-            # expects it to already exist.
-            self._create_action_here(ctxt, request_spec['instance_uuids'])
-            self.scheduler_rpcapi.run_instance(ctxt,
-                    **host_sched_kwargs)
-            return
-        self.msg_runner.schedule_run_instance(ctxt, target_cell,
-                                              host_sched_kwargs)
+        weighted_cells = self.weight_handler.get_weighed_objects(
+                self.weigher_classes, cells, filter_properties)
+        LOG.debug(_("Weighted cells: %(weighted_cells)s"), locals())
+
+        # Keep trying until one works
+        for weighted_cell in weighted_cells:
+            cell = weighted_cell.obj
+            try:
+                if cell.is_me:
+                    # Need to create instance DB entry as scheduler
+                    # thinks it's already created... At least how things
+                    # currently work.
+                    self._create_instances_here(ctxt, request_spec)
+                    # Need to record the create action in the db as the
+                    # scheduler expects it to already exist.
+                    self._create_action_here(
+                            ctxt, request_spec['instance_uuids'])
+                    self.scheduler_rpcapi.run_instance(ctxt,
+                            **host_sched_kwargs)
+                    return
+                # Forward request to cell
+                self.msg_runner.schedule_run_instance(ctxt, cell,
+                                                      host_sched_kwargs)
+                return
+            except Exception:
+                LOG.exception(_("Couldn't communicate with cell '%s'") %
+                        cell.name)
+        # FIXME(comstud): Would be nice to kick this back up so that
+        # the parent cell could retry, if we had a parent.
+        msg = _("Couldn't communicate with any cells")
+        LOG.error(msg)
+        raise exception.NoCellsAvailable()
 
     def run_instance(self, message, host_sched_kwargs):
         """Pick a cell where we should create a new instance."""
