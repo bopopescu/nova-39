@@ -281,11 +281,31 @@ def wrap_migration_error(function):
             function(self, context, *args, **kwargs)
         except Exception as error:
             with excutils.save_and_reraise_exception():
-                migration_id = kwargs.get('migration_id')
+                # Long function name is long
+                get_migration = self.db.migration_get_by_instance_and_status
+                instance = kwargs.get('instance')
 
-                if migration_id:
-                    self.db.migration_update(context,
-                                             migration_id,
+                elevated = context.elevated()
+
+                migration = kwargs.get('migration')
+                if not migration:
+                    # Possibly RPC message with migration_id instead of dict
+                    migration_id = kwargs.get('migration_id')
+                    if migration_id:
+                        migration = self.db.migration_get(elevated,
+                                                          migration_id)
+
+                if not migration and instance:
+                    # Possibly a failure in pre_migrate
+                    try:
+                        migration = get_migration(elevated,
+                                                  instance['uuid'],
+                                                  'pre-migrating')
+                    except exception.MigrationNotFoundByStatus:
+                        pass
+
+                if migration:
+                    self.db.migration_update(elevated, migration['id'],
                                              {'status': 'error'})
 
     return decorated_function
