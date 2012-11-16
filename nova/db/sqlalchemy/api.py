@@ -2034,6 +2034,15 @@ def _instance_update(context, instance_uuid, values, copy_old_instance=False):
                                              session,
                                              values['hostname'])
 
+        if "expected_vm_state" in values:
+            expected = values.pop("expected_vm_state")
+            if not isinstance(expected, (tuple, list, set)):
+                expected = (expected,)
+            actual_state = instance_ref["vm_state"]
+            if actual_state not in expected:
+                raise exception.UnexpectedVMStateError(actual=actual_state,
+                                                         expected=expected)
+
         if copy_old_instance:
             old_instance_ref = copy.copy(instance_ref)
         else:
