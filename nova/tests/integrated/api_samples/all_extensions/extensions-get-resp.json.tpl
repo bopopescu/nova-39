@@ -537,6 +537,14 @@
             "updated": "%(timestamp)s"
         },
         {
+            "alias": "os-server-uuid",
+            "description": "Support to show the UUID of networks of instance.",
+            "links": [],
+            "name": "ServerUUID",
+            "namespace": "http://docs.openstack.org/compute/ext/server_uuid/api/v1.1",
+            "updated": "%(timestamp)s"
+        },
+        {
             "alias": "os-virtual-interfacesv2",
             "description": "%(text)s",
             "links": [],
