@@ -124,6 +124,24 @@ def notify(context, publisher_id, event_type, priority, payload):
         raise BadPriorityException(
             _('%s not in valid priorities') % priority)
 
+    date_keys = (
+        "created_at",
+        "launched_at",
+        "deleted_at",
+        "updated_at",
+        "scheduled_at",
+        "termiated_at",
+        "audit_period_beginning",
+        "audit_period_ending",
+    )
+
+    for key in date_keys:
+        if key in payload and payload[key]:
+            date_obj = timeutils.parse_isotime(str(payload[key]))
+            new_time = timeutils.isotime(at=date_obj).replace("Z", "")
+            new_time = new_time.replace("T", " ")
+            payload[key] = new_time
+
     # Ensure everything is JSON serializable.
     payload = jsonutils.to_primitive(payload, convert_instances=True)
 
