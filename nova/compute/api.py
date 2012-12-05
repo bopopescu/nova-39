@@ -1251,6 +1251,7 @@ class API(base.Base):
     @wrap_check_policy
     @check_instance_lock
     @check_instance_state(vm_state=None, task_state=None)
+    @hooks.add_hook("api_delete")
     def delete(self, context, instance):
         """Terminate an instance."""
         LOG.debug(_("Going to try to terminate instance"), instance=instance)
