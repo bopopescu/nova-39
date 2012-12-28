@@ -62,12 +62,14 @@ class RackspaceFilter(filters.BaseHostFilter):
 
     def _ram_check_filter(self, host_state, filter_properties):
         """Somewhat duplicates RamFilter, but provides extra 1G reserve
-        for instances < 30G.
+        for instances < 8G.  This is an attempt to reduce issues with
+        racing for resources on hosts that are nearly full and the extra
+        overhead that Xen uses per VM.
         """
         instance_type = filter_properties.get('instance_type')
         requested_ram = instance_type['memory_mb']
         free_ram_mb = host_state.free_ram_mb
-        if requested_ram < (30 * 1024):
+        if requested_ram < (8 * 1024):
             extra_reserve = 1024
         else:
             extra_reserve = 0
