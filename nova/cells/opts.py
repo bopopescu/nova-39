@@ -43,6 +43,9 @@ cells_opts = [
                 default=10.0,
                 help='Percentage of cell capacity to hold in reserve. '
                      'Affects both memory and disk utilization'),
+    cfg.IntOpt('bandwidth_update_interval',
+                default=600,
+                help='Seconds between bandwidth updates for cells.'),
 ]
 
 cfg.CONF.register_opts(cells_opts, group='cells')

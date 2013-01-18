@@ -191,12 +191,13 @@ class ConductorAPI(nova.openstack.common.rpc.proxy.RpcProxy):
     def bw_usage_update(self, context, uuid, mac, start_period,
                         bw_in=None, bw_out=None,
                         last_ctr_in=None, last_ctr_out=None,
-                        last_refreshed=None):
+                        last_refreshed=None, update_cells=True):
         msg = self.make_msg('bw_usage_update',
                             uuid=uuid, mac=mac, start_period=start_period,
                             bw_in=bw_in, bw_out=bw_out,
                             last_ctr_in=last_ctr_in, last_ctr_out=last_ctr_out,
-                            last_refreshed=last_refreshed)
+                            last_refreshed=last_refreshed,
+                            update_cells=update_cells)
         return self.call(context, msg, version='1.5')
 
     def security_group_get_by_instance(self, context, instance):
