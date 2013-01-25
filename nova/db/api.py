@@ -49,6 +49,7 @@ from nova.cells import rpcapi as cells_rpcapi
 from nova import exception
 from nova.openstack.common.db import api as db_api
 from nova.openstack.common import log as logging
+from nova import timing
 
 
 db_opts = [
@@ -177,6 +178,7 @@ def compute_node_get(context, compute_id):
     return IMPL.compute_node_get(context, compute_id)
 
 
+@timing.timequeries
 def compute_node_get_all(context):
     """Get all computeNodes."""
     return IMPL.compute_node_get_all(context)

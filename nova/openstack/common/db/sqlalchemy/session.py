@@ -257,6 +257,7 @@ from nova.openstack.common.db import exception
 from nova.openstack.common import log as logging
 from nova.openstack.common.gettextutils import _
 from nova.openstack.common import timeutils
+from nova import timing
 
 
 sql_opts = [
@@ -487,6 +488,22 @@ def _add_regexp_listener(dbapi_con, con_record):
     dbapi_con.create_function('regexp', 2, regexp)
 
 
+def before_cursor_execute(conn, cursor, statement, params, context,
+                          executemany):
+    """Track query start time."""
+    if timing.is_query_timing_enabled():
+        context.__query_start_time = timeutils.utcnow()
+
+
+def after_cursor_execute(conn, cursor, statement, params, context,
+                          executemany):
+    """Track query duration."""
+    if timing.is_query_timing_enabled():
+        start = context.__query_start_time
+        end = timeutils.utcnow()
+        timing.log_query_timing(statement, params, start, end)
+
+
 def _greenthread_yield(dbapi_con, con_record):
     """
     Ensure other greenthreads get a chance to execute by forcing a context
@@ -558,6 +575,10 @@ def create_engine(sql_connection, sqlite_fk=False):
     engine = sqlalchemy.create_engine(sql_connection, **engine_args)
 
     sqlalchemy.event.listen(engine, 'checkin', _greenthread_yield)
+    sqlalchemy.event.listen(engine, "before_cursor_execute",
+            before_cursor_execute)
+    sqlalchemy.event.listen(engine, "after_cursor_execute",
+            after_cursor_execute)
 
     if 'mysql' in connection_dict.drivername:
         sqlalchemy.event.listen(engine, 'checkout', _ping_listener)
