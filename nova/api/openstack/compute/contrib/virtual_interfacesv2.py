@@ -88,14 +88,15 @@ class ServerVirtualInterfaceController(object):
     @wsgi.serializers(xml=VirtualInterfaceTemplate)
     def index(self, req, server_id):
         """Returns the list of VIFs for a given instance."""
-        authorize(req.environ['nova.context'])
+        context = req.environ['nova.context']
+        authorize(context, action='index')
         return self._items(req, server_id,
                            entity_maker=_translate_vif_summary_view)
 
     @wsgi.serializers(xml=VirtualInterfaceTemplate)
     def create(self, req, server_id, body):
         context = req.environ["nova.context"]
-        authorize(context)
+        authorize(context, action='create')
         instance = self.compute_api.get(context, server_id)
         network_id = body["virtual_interface"]["network_id"]
         try:
@@ -114,7 +115,7 @@ class ServerVirtualInterfaceController(object):
     @wsgi.serializers(xml=VirtualInterfaceTemplate)
     def delete(self, req, server_id, id):
         context = req.environ["nova.context"]
-        authorize(context)
+        authorize(context, action='delete')
         instance = self.compute_api.get(context, server_id)
         self.compute_api.delete_vifs_for_instance(context, instance,
                                                   [id])

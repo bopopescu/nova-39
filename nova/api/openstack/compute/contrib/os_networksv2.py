@@ -114,7 +114,7 @@ class NetworkController(object):
 
     def index(self, req):
         context = req.environ['nova.context']
-        authorize(context)
+        authorize(context, action='index')
         networks = self.network_api.get_all(context)
         if not self._default_networks:
             self._refresh_default_networks()
@@ -123,7 +123,7 @@ class NetworkController(object):
 
     def show(self, req, id):
         context = req.environ['nova.context']
-        authorize(context)
+        authorize(context, action='show')
         LOG.debug(_("Showing network with id %s") % id)
         try:
             network = self.network_api.get(context, id)
@@ -135,7 +135,7 @@ class NetworkController(object):
 
     def delete(self, req, id):
         context = req.environ['nova.context']
-        authorize(context)
+        authorize(context, action='delete')
         try:
             reservation = QUOTAS.reserve(context, networks=-1)
         except Exception:
@@ -164,7 +164,7 @@ class NetworkController(object):
             raise exc.HTTPUnprocessableEntity()
 
         context = req.environ['nova.context']
-        authorize(context)
+        authorize(context, action='create')
 
         network = body['network']
         label = network['label']
