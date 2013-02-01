@@ -39,6 +39,11 @@ def delete_if_exists(path):
             raise
 
 
+def make_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
 def _link(src, dst):
     LOG.info("Hard-linking file '%s' -> '%s'" % (src, dst))
     os.link(src, dst)

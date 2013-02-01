@@ -194,6 +194,10 @@ class NotAuthorized(NovaException):
     code = 403
 
 
+class RegionAmbiguity(NovaException):
+    message = _("Ambiguous endpoint for region: %(region)s")
+
+
 class AdminRequired(NotAuthorized):
     message = _("User does not have admin privileges")
 
@@ -449,6 +453,10 @@ class ConstraintNotMet(NovaException):
 class NotFound(NovaException):
     message = _("Resource could not be found.")
     code = 404
+
+
+class NoServiceEndpoint(NotFound):
+    message = _("Service Catalog does not contain %(service_id)s endpoint.")
 
 
 class AgentBuildNotFound(NotFound):
