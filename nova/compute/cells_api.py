@@ -576,6 +576,8 @@ class ComputeCellsAPI(compute_api.API):
     @validate_cell
     def update_instance_metadata(self, context, instance,
                                  metadata, delete=False):
+        # NOTE(belliott) The metadata update code needs a dictified instance
+        instance = dict(instance.iteritems())
         rv = super(ComputeCellsAPI, self).update_instance_metadata(context,
                 instance, metadata, delete=delete)
         try:

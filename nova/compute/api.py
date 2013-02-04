@@ -2485,9 +2485,6 @@ class API(base.Base):
         self._check_metadata_properties_quota(context, _metadata)
         metadata = self.db.instance_metadata_update(context, instance['uuid'],
                                          _metadata, True)
-        # HACK(johannes): Setting 'metadata' attribute to a dict on
-        # a sqlalchemy model object blows up
-        instance = dict(instance)
         instance['metadata'] = metadata
         notifications.send_update(context, instance, instance)
         diff = utils.diff_dict(orig, _metadata)
