@@ -401,6 +401,14 @@
             "updated": "2012-11-19T00:00:00+00:00"
         },
         {
+            "alias": "os-networksv2",
+            "description": "Admin-only Network Management Extension.",
+            "links": [],
+            "name": "OSNetworksV2",
+            "namespace": "http://docs.openstack.org/ext/services/api/v1.1",
+            "updated": "2012-03-07T09:46:43-05:00"
+        },
+        {
             "alias": "os-quota-class-sets",
             "description": "Quota classes management support.",
             "links": [],
@@ -465,12 +473,28 @@
             "updated": "2012-01-23T00:00:00+00:00"
         },
         {
+            "alias": "os-server-uuid",
+            "description": "Support to show the UUID of networks of instance.",
+            "links": [],
+            "name": "ServerUUID",
+            "namespace": "http://docs.openstack.org/compute/ext/server_uuid/api/v1.1",
+            "updated": "2012-11-14T00:00:00+00:00"
+        },
+        {
             "alias": "os-services",
             "description": "Services support.",
             "links": [],
             "name": "Services",
             "namespace": "http://docs.openstack.org/compute/ext/services/api/v2",
             "updated": "2012-10-28T00:00:00-00:00"
+        },
+        {
+            "alias": "os-si-image-schedule",
+            "description": "Enables automatic scheduled images to be taken of a server.",
+            "links": [],
+            "name": "ScheduledImages",
+            "namespace": "http://docs.openstack.org/servers/api/ext/scheduled_images/v1.0",
+            "updated": "2013-03-20T00:00:00+00:00"
         },
         {
             "alias": "os-simple-tenant-usage",
@@ -513,6 +537,14 @@
             "updated": "2011-08-17T00:00:00+00:00"
         },
         {
+            "alias": "os-virtual-interfacesv2",
+            "description": "Virtual interface support.",
+            "links": [],
+            "name": "VirtualInterfaces",
+            "namespace": "http://docs.openstack.org/compute/ext/virtual_interfacesv2/api/v1.1",
+            "updated": "2011-08-17T00:00:00+00:00"
+        },
+        {
             "alias": "os-volumes",
             "description": "Volumes support.",
             "links": [],
@@ -522,35 +554,11 @@
         },
         {
             "alias": "rax-backup-schedule",
-            "description": "Backup scheduling support",
+            "description": "Backup schedule support for instances.",
             "links": [],
             "name": "Backup_schedule",
             "namespace": "http://docs.openstack.org/ext/backup-schedule/api/v1.1",
-            "updated": "2012-11-27T00:00:00+00:00"
-        },
-        {
-            "alias": "os-networksv2",
-            "description": "Network support (custom to Rackspace)",
-            "links": [],
-            "name": "OSNetworksV2",
-            "namespace": "http://docs.openstack.org/ext/services/api/v1.1",
-            "updated": "2012-11-27T00:00:00+00:00"
-        },
-        {
-            "alias": "os-virtual-interfacesv2",
-            "description": "Virtual interface support (custom to Rackspace)",
-            "links": [],
-            "name": "VirtualInterfaces",
-            "namespace": "http://docs.openstack.org/compute/ext/virtual_interfacesv2/api/v1.1",
-            "updated": "2012-11-27T00:00:00+00:00"
-        },
-        {
-            "alias": "os-server-uuid",
-            "description": "Support to show the UUID of networks of instance.",
-            "links": [],
-            "name": "ServerUUID",
-            "namespace": "http://docs.openstack.org/compute/ext/server_uuid/api/v1.1",
-            "updated": "2012-11-27T00:00:00+00:00"
+            "updated": "2011-08-18T00:00:00+00:00"
         }
     ]
 }

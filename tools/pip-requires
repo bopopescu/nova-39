@@ -32,3 +32,6 @@ websockify<0.4
 oslo.config>=1.1.0
 tempo
 Requiem
+
+#NOTE(ameade) This is for the scheduled images extension temporarily here
+qonos
