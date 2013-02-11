@@ -67,7 +67,8 @@ db_opts = [
 CONF = cfg.CONF
 CONF.register_opts(db_opts)
 
-_BACKEND_MAPPING = {'sqlalchemy': 'nova.db.sqlalchemy.api'}
+_BACKEND_MAPPING = {'sqlalchemy': 'nova.db.sqlalchemy.api',
+                    'mysqldb': 'nova.db.mysqldb.api'}
 
 
 IMPL = db_api.DBAPI(backend_mapping=_BACKEND_MAPPING)
