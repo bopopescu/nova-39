@@ -22,6 +22,7 @@ from nova import context
 from nova.db.mysqldb import sql
 from nova import exception
 from nova.openstack.common import log as logging
+from nova.openstack.common import uuidutils
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -64,3 +65,26 @@ class Mixin(object):
         query = cls._build_instance_get(ctxt,
                                         columns_to_join=columns_to_join)
         return query.fetchall(conn)
+
+    @classmethod
+    def destroy(cls, conn, ctxt, instance_uuid, constraint=None):
+        if uuidutils.is_uuid_like(instance_uuid):
+            instance_ref = cls._instance_get_by_uuid(conn, ctxt,
+                    instance_uuid)
+        else:
+            raise exception.InvalidUUID(instance_uuid)
+        if constraint:
+            constraint.check(instance_ref)
+        result = cls.soft_delete(conn, instance_uuid)
+        if result == 0:
+            return
+        sg_assoc = cls.get_model('SecurityGroupInstanceAssociation')
+        sg_assoc.soft_delete(conn, instance_uuid)
+        ic = cls.get_model('InstanceInfoCache')
+        ic.soft_delete(conn, instance_uuid)
+        return instance_ref
+
+    @classmethod
+    def soft_delete(cls, conn, instance_uuid):
+        return super(Mixin, cls).soft_delete(conn,
+                '`uuid` = %(instance_uuid)s', instance_uuid=instance_uuid)

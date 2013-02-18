@@ -95,6 +95,18 @@ class API(object):
         LOG.warn(_("Falling back to SQLAlchemy for method %s") % key)
         return getattr(sqlalchemy_api, key)
 
+    @staticmethod
+    def constraint(**conditions):
+        return models.Constraint(conditions)
+
+    @staticmethod
+    def equal_any(*values):
+        return models.EqualityCondition(values)
+
+    @staticmethod
+    def not_equal(*values):
+        return models.InequalityCondition(values)
+
     @dbapi_method()
     def bw_usage_update(self, ctxt, uuid, mac, start_period, bw_in, bw_out,
                         last_ctr_in, last_ctr_out, last_refreshed=None):
@@ -116,3 +128,11 @@ class API(object):
             instances = models.Models.Instance.get_all(conn, ctxt,
                                                        columns_to_join)
         return [i.to_dict() for i in instances]
+
+    @dbapi_method()
+    def instance_destroy(self, ctxt, instance_uuid, constraint=None):
+        with self.pool.get() as conn:
+            orig_instance = models.Models.Instance.destroy(conn, ctxt,
+                                                           instance_uuid,
+                                                           constraint)
+        return orig_instance.to_dict()

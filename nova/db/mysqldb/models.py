@@ -23,6 +23,7 @@ import sys
 from oslo.config import cfg
 
 from nova.db.mysqldb import sql
+from nova import exception
 from nova.openstack.common import importutils
 from nova.openstack.common import log as logging
 from nova.openstack.common import timeutils
@@ -32,6 +33,34 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 _OUR_MODULE = sys.modules[__name__]
 _SCHEMA_INFO = {'version': None}
+
+
+class Constraint(object):
+    def __init__(self, conditions):
+        self.conditions = conditions
+
+    def check(self, model):
+        for key, condition in self.conditions.iteritems():
+            condition.check(model, key)
+
+
+class EqualityCondition(object):
+    def __init__(self, values):
+        self.values = values
+
+    def check(self, model, field):
+        if model[field] not in self.values:
+            raise exception.ConstraintNotMet()
+
+
+class InequalityCondition(object):
+
+    def __init__(self, values):
+        self.values = values
+
+    def check(self, model, field):
+        if model[field] in self.values:
+            raise exception.ConstraintNotMet()
 
 
 class Join(object):
