@@ -232,10 +232,19 @@ class _BaseSecurityGroup(_BaseModel):
     __model__ = 'SecurityGroup'
     __table__ = 'security_groups'
 
+    rules = Join('security_group_rules',
+            '(security_group_rules.parent_group_id = self.id and '
+            'security_group_rules.deleted = 0)')
+
 
 class _BaseSecurityGroupInstanceAssociation(_BaseModel):
     __model__ = 'SecurityGroupInstanceAssociation'
     __table__ = 'security_group_instance_association'
+
+
+class _BaseSecurityGroupIngressRule(_BaseModel):
+    __model__ = 'SecurityGroupIngressRule'
+    __table__ = 'security_group_rules'
 
 
 class Models(object):
