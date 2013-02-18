@@ -16,6 +16,7 @@
 #    under the License.
 
 from nova.db.mysqldb import sql
+from nova import exception
 from nova.openstack.common import timeutils
 
 _WHERE_STR = '`instance_uuid`=%(instance_uuid)s'
@@ -31,17 +32,19 @@ class Mixin(object):
     @classmethod
     def update(cls, conn, context, instance_uuid, values):
         info_cache = cls.get(conn, context, instance_uuid)
-        if info_cache and not info_cache['deleted']:
-            if 'updated_at' not in values:
-                values['updated_at'] = timeutils.utcnow()
-            query = sql.UpdateQuery(cls, values=values)
-            query = query.where(_WHERE_STR, instance_uuid=instance_uuid)
-            rows = query.update(conn)
-            if rows:
-                return cls.get(conn, context, instance_uuid)
-            else:
-                return info_cache
-        return cls.create(conn, context, instance_uuid, values)
+        if not info_cache:
+            return cls.create(conn, context, instance_uuid, values)
+        if info_cache['deleted']:
+            raise exception.InstanceInfoCacheNotFound(
+                    instance_uuid=instance_uuid)
+        if 'updated_at' not in values:
+            values['updated_at'] = timeutils.utcnow()
+        query = sql.UpdateQuery(cls, values=values)
+        query = query.where(_WHERE_STR, instance_uuid=instance_uuid)
+        rows = query.update(conn)
+        if rows:
+            return cls.get(conn, context, instance_uuid)
+        return info_cache
 
     @classmethod
     def create(cls, conn, context, instance_uuid, values):
