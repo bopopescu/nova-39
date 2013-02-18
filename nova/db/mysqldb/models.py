@@ -20,12 +20,15 @@ MySQLdb models
 """
 import sys
 
+from oslo.config import cfg
+
 from nova.db.mysqldb import sql
 from nova.openstack.common import importutils
 from nova.openstack.common import log as logging
 from nova.openstack.common import timeutils
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 _OUR_MODULE = sys.modules[__name__]
 _SCHEMA_INFO = {'version': None}
@@ -117,6 +120,93 @@ class _BaseModel(dict):
 class _BaseBandwidthUsageCache(_BaseModel):
     __model__ = 'BandwidthUsageCache'
     __table__ = 'bw_usage_cache'
+
+
+class _BaseInstance(_BaseModel):
+    __model__ = 'Instance'
+    __table__ = 'instances'
+
+    # Joins
+    info_cache = Join('instance_info_caches',
+            'info_cache.instance_uuid = self.uuid',
+            use_list=False)
+    metadata = Join('instance_metadata',
+            '(metadata.instance_uuid = self.uuid and metadata.deleted = 0)')
+    system_metadata = Join('instance_system_metadata',
+            '(system_metadata.instance_uuid = self.uuid and '
+            'system_metadata.deleted = 0)')
+    instance_type = Join('instance_types',
+            'instance_type.id = self.instance_type_id',
+            use_list=False)
+    sec_group_assoc = Join('security_group_instance_association',
+            '(sec_group_assoc.instance_uuid = self.uuid and '
+            'sec_group_assoc.deleted = 0)',
+            hidden=True)
+    security_groups = Join('security_groups',
+            '(sec_group_assoc.security_group_id = security_groups.id and '
+            'security_groups.deleted = 0)',
+            prereq_join_names=['sec_group_assoc'])
+    # NOTE(deva/comstud): Temporary for bare metal.  See note in
+    # _instance_update() in sqlalchemy/api.py
+    extra_specs = Join('instance_type_extra_specs',
+            '(extra_specs.instance_type_id = self.instance_type_id and '
+            'extra_specs.deleted = 0)',
+            use_list=False, use_dict=True)
+
+    _default_joins = ['info_cache', 'metadata', 'system_metadata',
+                       'instance_type', 'security_groups', 'extra_specs']
+
+    def to_dict(self):
+        dict_ = super(_BaseInstance, self).to_dict()
+        # We need to add the 'name' hack.
+        try:
+            base_name = CONF.instance_name_template % dict_['id']
+        except TypeError:
+            try:
+                base_name = CONF.instance_name_template % dict_
+            except KeyError:
+                base_name = dict_['uuid']
+        dict_['name'] = base_name
+        return dict_
+
+
+class _BaseInstanceInfoCache(_BaseModel):
+    __model__ = 'InstanceInfoCache'
+    __table__ = 'instance_info_caches'
+
+
+class _BaseInstanceMetadata(_BaseModel):
+    __model__ = 'InstanceMetadata'
+    __table__ = 'instance_metadata'
+
+
+class _BaseInstanceSystemMetadata(_BaseModel):
+    __model__ = 'InstanceSystemMetadata'
+    __table__ = 'instance_system_metadata'
+
+
+class _BaseInstanceTypes(_BaseModel):
+    __model__ = 'InstanceTypes'
+    __table__ = 'instance_types'
+
+
+class _BaseInstanceTypeExtraSpecs(_BaseModel):
+    __model__ = 'InstanceTypeExtraSpecs'
+    __table__ = 'instance_type_extra_specs'
+
+    def to_dict(self):
+        """Return dictionary representation of key/value pairs."""
+        return {self['key']: self['value']}
+
+
+class _BaseSecurityGroup(_BaseModel):
+    __model__ = 'SecurityGroup'
+    __table__ = 'security_groups'
+
+
+class _BaseSecurityGroupInstanceAssociation(_BaseModel):
+    __model__ = 'SecurityGroupInstanceAssociation'
+    __table__ = 'security_group_instance_association'
 
 
 class Models(object):
