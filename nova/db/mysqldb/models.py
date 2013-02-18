@@ -114,6 +114,11 @@ class _BaseModel(dict):
         return query.update(conn)
 
 
+class _BaseBandwidthUsageCache(_BaseModel):
+    __model__ = 'BandwidthUsageCache'
+    __table__ = 'bw_usage_cache'
+
+
 class Models(object):
     """This will have attributes for every model.  Ie, 'Instance'.
     This gets setattr'd every time we update the schema, so it's an

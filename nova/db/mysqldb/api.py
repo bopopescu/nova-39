@@ -94,3 +94,11 @@ class API(object):
         # forward unimplemented method to sqlalchemy backend:
         LOG.warn(_("Falling back to SQLAlchemy for method %s") % key)
         return getattr(sqlalchemy_api, key)
+
+    @dbapi_method()
+    def bw_usage_update(self, ctxt, uuid, mac, start_period, bw_in, bw_out,
+                        last_ctr_in, last_ctr_out, last_refreshed=None):
+        with self.pool.get() as conn:
+            return models.Models.BandwidthUsageCache.update(conn,
+                    ctxt, uuid, mac, start_period, bw_in, bw_out,
+                    last_ctr_in, last_ctr_out, last_refreshed)
