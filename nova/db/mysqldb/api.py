@@ -136,3 +136,25 @@ class API(object):
                                                            instance_uuid,
                                                            constraint)
         return orig_instance.to_dict()
+
+    @dbapi_method()
+    def instance_info_cache_get(self, ctxt, instance_uuid):
+        method = models.Models.InstanceInfoCache.get
+        with self.pool.get() as conn:
+            info_cache = method(conn, ctxt, instance_uuid)
+        if info_cache is not None:
+            info_cache = info_cache.to_dict()
+        return info_cache
+
+    @dbapi_method()
+    def instance_info_cache_update(self, ctxt, instance_uuid, values):
+        method = models.Models.InstanceInfoCache.update
+        with self.pool.get() as conn:
+            info_cache = method(conn, ctxt, instance_uuid, values)
+        return info_cache.to_dict()
+
+    @dbapi_method()
+    def instance_info_cache_delete(self, ctxt, instance_uuid):
+        method = models.Models.InstanceInfoCache.soft_delete
+        with self.pool.get() as conn:
+            method(conn, ctxt, instance_uuid)
