@@ -17,7 +17,8 @@ Rackspace soft rules
 """
 import random
 
-from nova.openstack.common import cfg
+from oslo.config import cfg
+
 from nova.scheduler import weights
 
 

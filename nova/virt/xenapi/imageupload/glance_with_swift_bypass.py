@@ -15,9 +15,10 @@
 
 import urllib
 
+from oslo.config import cfg
+
 from nova import exception
 from nova.image import glance
-from nova.openstack.common import cfg
 import nova.openstack.common.log as logging
 from nova.virt.xenapi import vm_utils
 

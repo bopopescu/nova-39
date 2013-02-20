@@ -15,6 +15,8 @@
 
 """Compute API that proxies via Cells Service."""
 
+from oslo.config import cfg
+
 from nova import availability_zones
 from nova import block_device
 from nova.cells import cfg as cells_config
@@ -25,7 +27,6 @@ from nova.compute import flavors
 from nova.compute import rpcapi as compute_rpcapi
 from nova.compute import vm_states
 from nova import exception
-from nova.openstack.common import cfg
 from nova.openstack.common import excutils
 
 

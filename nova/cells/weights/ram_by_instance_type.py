@@ -17,8 +17,9 @@
 Weight cells by memory needed in a way that spreads instances.
 """
 
+from oslo.config import cfg
+
 from nova.cells import weights
-from nova.openstack.common import cfg
 
 ram_weigher_opts = [
         cfg.FloatOpt('ram_weight_multiplier',

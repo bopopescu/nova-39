@@ -18,10 +18,11 @@
 
 import webob.exc
 
+from oslo.config import cfg
+
 from nova.api.openstack import extensions
 from nova.api.openstack import wsgi
 from nova.api.openstack import xmlutil
-from nova.openstack.common import cfg
 from nova.openstack.common import log as logging
 
 
