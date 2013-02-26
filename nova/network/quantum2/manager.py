@@ -17,8 +17,10 @@
 
 import functools
 import re
+import sys
 import uuid
 
+import eventlet
 import netaddr
 
 from oslo.config import cfg
@@ -509,9 +511,20 @@ class QuantumManager(manager.SchedulerDependentManager):
                 LOG.exception(_('Melange allocation failed'))
                 self._clean_up_melange(tenant_id, instance_id)
 
-        for vif in vifs:
-            self._establish_interface_and_port(vif, instance_id, tenant_id,
-                                               rxtx_factor)
+        pool = eventlet.GreenPool()
+
+        def _establish(vif):
+            try:
+                self._establish_interface_and_port(vif, instance_id, tenant_id,
+                                                   rxtx_factor)
+            except Exception:
+                exc_info = sys.exc_info()
+                return exc_info
+
+        for exc in pool.imap(_establish, vifs):
+            # there will only be a result if it was an exception
+            if exc is not None:
+                raise exc[0], exc[1], exc[2]
 
         nw_info = self._vifs_to_model(vifs)
         return self._order_nw_info_by_label(nw_info)
