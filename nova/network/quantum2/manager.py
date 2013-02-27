@@ -608,7 +608,7 @@ class QuantumManager(manager.SchedulerDependentManager):
 
         # allocate the ip in melange
         self.m_conn.allocate_ip_for_instance(tenant_id, instance_id,
-                                             interface_id, network_id)
+                                             interface_id, network_id, 4)
 
         # update port address pairs (does nothing if unnecessary)
         self._update_port_allowed_address_pairs(tenant_id, instance_id,

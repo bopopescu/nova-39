@@ -145,12 +145,13 @@ class MelangeConnection(object):
         return res["interface"]
 
     def allocate_ip_for_instance(self, tenant_id, instance_id, interface_id,
-                                 network_id):
+                                 network_id, version=None):
         """
         Allocate an additional IP from network on interface
         """
         body = {'network': {'id': network_id,
-                            'tenant_id': tenant_id}}
+                            'tenant_id': tenant_id,
+                            'version': version}}
 
         url = 'ipam/instances/%s/interfaces/%s/ip_addresses' % (instance_id,
                                                                 interface_id)
