@@ -29,6 +29,9 @@ filter_opts = [
     cfg.IntOpt('scheduler_spare_host_percentage',
             default=10,
             help='Percentage of hosts that should be reserved as spares'),
+    cfg.BoolOpt('rackspace_ram_check_enabled',
+            default=False,
+            help='Toggle flag for _ram_check_filter memory reserve logic'),
 ]
 
 CONF = cfg.CONF
@@ -95,7 +98,8 @@ class RackspaceFilter(filters.BaseHostFilter):
 
     def _host_passes(self, host_state, filter_properties):
         """Rackspace server best match hard rules."""
-        if not self._ram_check_filter(host_state, filter_properties):
+        if CONF.rackspace_ram_check_enabled and not \
+                self._ram_check_filter(host_state, filter_properties):
             return False
         if not self._io_ops_filter(host_state):
             return False
