@@ -656,6 +656,9 @@ class QuantumManager(manager.SchedulerDependentManager):
 
     def add_fixed_ip_to_instance(self, context, instance_id, host, network_id,
                                  **kwargs):
+        if not context.is_admin:
+            LOG.error('Must be admin context to add fixed ip')
+            return
         msg = _('adding fixed_ip to instance |%(instance_id)s| on '
                 'network |%(network_id)s|')
         LOG.debug(msg % {'instance_id': instance_id, 'network_id': network_id})
@@ -667,11 +670,13 @@ class QuantumManager(manager.SchedulerDependentManager):
             # map took place meaning they requested a rax network
             tenant_id = CONF.quantum_default_tenant_id
         else:
-            tenant_id = context.project_id
+            # set to None, we'll get it from interface later
+            tenant_id = None
 
         # get the interfaces for this instance and find one attached to nw_id
         interfaces = self.m_conn.get_allocated_networks(instance_id)
         interface_id = None
+        instance_tenant_id = None
         for interface in interfaces:
             for ip_addr in interface.get('ip_addresses', []):
                 ip_block = ip_addr.get('ip_block', {})
@@ -679,12 +684,19 @@ class QuantumManager(manager.SchedulerDependentManager):
                 if block_network_id == network_id:
                     # found it!
                     interface_id = interface.get('id')
+                    instance_tenant_id = interface.get('tenant_id')
                     break
             if interface_id is not None:
                 break
         else:
             LOG.error(_('Interface not found, IP allocation failed'))
             return
+
+        # if not using the quantum default tenant because we mapped the network
+        # id, use the instance's interface's tenant_id
+        # such a hack....
+        if tenant_id is None:
+            tenant_id = instance_tenant_id
 
         # allocate the ip in melange
         self.m_conn.allocate_ip_for_instance(tenant_id, instance_id,
@@ -696,7 +708,9 @@ class QuantumManager(manager.SchedulerDependentManager):
 
     def remove_fixed_ip_from_instance(self, context, instance_id,
                                       host, address, **kwargs):
-        tenant_id = context.project_id
+        if not context.is_admin:
+            LOG.error('Must be admin context to remove fixed ip')
+            return
         msg = _('removing fixed_ip |%(address)s| from '
                 'instance |%(instance_id)s|')
         LOG.debug(msg % {'address': address, 'instance_id': instance_id})
@@ -712,6 +726,7 @@ class QuantumManager(manager.SchedulerDependentManager):
                     interface_id = interface.get('id')
                     ip_block = ip_addr.get('ip_block', {})
                     network_id = ip_block.get('network_id')
+                    network_tenant_id = ip_block.get('tenant_id')
                     break
             if interface_id is not None:
                 break
@@ -732,7 +747,7 @@ class QuantumManager(manager.SchedulerDependentManager):
                                                address)
 
         # update port address pairs (does nothing if unnecessary)
-        self._update_port_allowed_address_pairs(tenant_id, instance_id,
+        self._update_port_allowed_address_pairs(network_tenant_id, instance_id,
                                                 interface_id, network_id)
 
     # NOTE(jkoelker) Only a single network is supported. Function is

@@ -1396,7 +1396,7 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
                    network_global_uuid_label_map=map)
 
         self.tenant_id = 'default'
-        self.context = context.RequestContext(user_id=1,
+        self.context = context.RequestContext(is_admin=True, user_id=1,
                                               project_id=self.tenant_id)
         self.q_conn = ('nova.network.quantum2.quantum_connection.'
                        'QuantumClientConnection')
@@ -1432,7 +1432,7 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
             mock.patch(self.m_conn + '.get_allocated_networks'),
             mock.patch(self.m_conn + '.get_interface_for_device'),
             mock.patch(self.m_conn + '.allocate_ip_for_instance'),
-            mock.patch(self.q_conn + '.update_port'),
+            mock.patch(self.q_conn + '.update_allowed_address_pairs_on_port'),
             mock.patch(self.q_conn + '.get_port_by_attachment'),
         ) as (get_allocated_networks,
               get_interface_for_device,
@@ -1443,8 +1443,9 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
             ip_block = {'network_id': '1'}
             get_allocated_networks.return_value = [
                 {'id': 'fake_uuid',
+                 'tenant_id': self.tenant_id,
                  'ip_addresses': [{'address': '10.0.0.3',
-                                    'ip_block': ip_block}]}]
+                                   'ip_block': ip_block}]}]
 
             get_interface_for_device.return_value = {
                 'interface': {'mac_address': 'xx.xx.xx.xx.xx.xx.xx',
@@ -1465,7 +1466,7 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
             mock.patch(self.m_conn + '.get_allocated_networks'),
             mock.patch(self.m_conn + '.get_interface_for_device'),
             mock.patch(self.m_conn + '.allocate_ip_for_instance'),
-            mock.patch(self.q_conn + '.update_port'),
+            mock.patch(self.q_conn + '.update_allowed_address_pairs_on_port'),
             mock.patch(self.q_conn + '.get_port_by_attachment'),
         ) as (get_allocated_networks,
               get_interface_for_device,
@@ -1476,6 +1477,7 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
             ip_block = {'network_id': self.default_networks[1]['network_id']}
             get_allocated_networks.return_value = [
                 {'id': 'fake_uuid',
+                 'tenant_id': self.tenant_id,
                  'ip_addresses': [{'address': '10.0.0.3',
                                    'ip_block': ip_block}]}]
 
@@ -1498,7 +1500,7 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
             mock.patch(self.m_conn + '.get_allocated_networks'),
             mock.patch(self.m_conn + '.get_interface_for_device'),
             mock.patch(self.m_conn + '.allocate_ip_for_instance'),
-            mock.patch(self.q_conn + '.update_port'),
+            mock.patch(self.q_conn + '.update_allowed_address_pairs_on_port'),
             mock.patch(self.q_conn + '.get_port_by_attachment'),
         ) as (get_allocated_networks,
               get_interface_for_device,
@@ -1516,12 +1518,32 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
             self.assertFalse(allocate_ip_for_instance.called)
             self.assertFalse(update_port.called)
 
+    def test_add_fixed_ip_bad_context(self):
+        with contextlib.nested(
+            mock.patch(self.m_conn + '.get_allocated_networks'),
+            mock.patch(self.m_conn + '.get_interface_for_device'),
+            mock.patch(self.m_conn + '.allocate_ip_for_instance'),
+            mock.patch(self.q_conn + '.update_allowed_address_pairs_on_port'),
+            mock.patch(self.q_conn + '.get_port_by_attachment'),
+        ) as (get_allocated_networks,
+              get_interface_for_device,
+              allocate_ip_for_instance,
+              update_port,
+              get_port_by_attachment):
+
+            ctxt = context.RequestContext(user_id=1,
+                                          project_id=self.tenant_id)
+            self.net_manager.add_fixed_ip_to_instance(ctxt, instance_id='1',
+                                                host='host', network_id='1')
+            self.assertFalse(allocate_ip_for_instance.called)
+            self.assertFalse(update_port.called)
+
     def test_remove_fixed_ip_from_instance(self):
         with contextlib.nested(
             mock.patch(self.m_conn + '.get_allocated_networks'),
             mock.patch(self.m_conn + '.get_interface_for_device'),
             mock.patch(self.m_conn + '.deallocate_ip_for_instance'),
-            mock.patch(self.q_conn + '.update_port'),
+            mock.patch(self.q_conn + '.update_allowed_address_pairs_on_port'),
             mock.patch(self.q_conn + '.get_port_by_attachment'),
         ) as (get_allocated_networks,
               get_interface_for_device,
@@ -1529,7 +1551,8 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
               update_port,
               get_port_by_attachment):
 
-            ip_block = {'network_id': 'some_uuid'}
+            ip_block = {'network_id': 'some_uuid',
+                        'tenant_id': self.tenant_id}
             get_allocated_networks.return_value = [
                 {'id': 'fake_uuid',
                  'ip_addresses': [{'address': '10.0.0.3',
@@ -1590,7 +1613,7 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
             mock.patch(self.m_conn + '.get_allocated_networks'),
             mock.patch(self.m_conn + '.get_interface_for_device'),
             mock.patch(self.m_conn + '.deallocate_ip_for_instance'),
-            mock.patch(self.q_conn + '.update_port'),
+            mock.patch(self.q_conn + '.update_allowed_address_pairs_on_port'),
             mock.patch(self.q_conn + '.get_port_by_attachment'),
         ) as (get_allocated_networks,
               get_interface_for_device,
@@ -1605,5 +1628,25 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
                                                            instance_id='1',
                                                            host='host',
                                                            address='10.0.0.3')
+            self.assertFalse(deallocate_ip_for_instance.called)
+            self.assertFalse(update_port.called)
+
+    def test_remove_fixed_ip_bad_context(self):
+        with contextlib.nested(
+            mock.patch(self.m_conn + '.get_allocated_networks'),
+            mock.patch(self.m_conn + '.get_interface_for_device'),
+            mock.patch(self.m_conn + '.deallocate_ip_for_instance'),
+            mock.patch(self.q_conn + '.update_allowed_address_pairs_on_port'),
+            mock.patch(self.q_conn + '.get_port_by_attachment'),
+        ) as (get_allocated_networks,
+              get_interface_for_device,
+              deallocate_ip_for_instance,
+              update_port,
+              get_port_by_attachment):
+
+            ctxt = context.RequestContext(user_id=1,
+                                          project_id=self.tenant_id)
+            self.net_manager.remove_fixed_ip_from_instance(ctxt,
+                    instance_id='1', host='host', address='10.0.0.3')
             self.assertFalse(deallocate_ip_for_instance.called)
             self.assertFalse(update_port.called)

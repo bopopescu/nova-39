@@ -126,7 +126,8 @@ class QuantumClientConnection(object):
                          'kwargs': kwargs, 'tenant_id': tenant_id})
         port_data = {'port': kwargs}
 
-        self.client.update_port(net_id, port_id, port_data)
+        self.client.update_port(tenant=tenant_id, network=net_id,
+                                port=port_id, body=port_data)
 
     def update_rxtx_factor_on_port(self, tenant_id, net_id, port_id,
                                    rxtx_factor):
