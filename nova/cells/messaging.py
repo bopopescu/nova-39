@@ -36,6 +36,7 @@ from nova.consoleauth import rpcapi as consoleauth_rpcapi
 from nova import context
 from nova.db import base
 from nova import exception
+from nova.openstack.common.db import exception as db_exc
 from nova.openstack.common import excutils
 from nova.openstack.common import importutils
 from nova.openstack.common import jsonutils
@@ -845,6 +846,10 @@ class _BroadcastMessageMethods(_BaseMessageMethods):
                 # Can happen if we try to update a deleted instance's
                 # network information.
                 pass
+            except db_exc.DBDuplicateEntry:
+                LOG.warning(_("Detected race with create and update for "
+                              "DB API call '%(name)s'"),
+                            dict(name='instance_info_cache_update'))
 
     def instance_destroy_at_top(self, message, instance, **kwargs):
         """Destroy an instance from the DB if we're a top level cell."""
@@ -889,7 +894,12 @@ class _BroadcastMessageMethods(_BaseMessageMethods):
         """Update Bandwidth usage in the DB if we're a top level cell."""
         if not self._at_the_top():
             return
-        self.db.bw_usage_update(message.ctxt, **bw_update_info)
+        try:
+            self.db.bw_usage_update(message.ctxt, **bw_update_info)
+        except db_exc.DBDuplicateEntry:
+            LOG.warning(_("Detected race with create and update for "
+                          "DB API call '%(name)s'"),
+                        dict(name='bw_usage_update'))
 
     def _sync_instance(self, ctxt, instance):
         if instance['deleted']:
