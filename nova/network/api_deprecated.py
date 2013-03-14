@@ -184,9 +184,9 @@ class API(base.Base):
         args['host'] = instance['host']
         args['interface_id'] = interface_id
 
-        return rpc.call(context, CONF.network_topic,
-                        {'method': 'deallocate_interface_for_instance',
-                         'args': args})
+        msg = {'method': 'deallocate_interface_for_instance',
+               'args': args}
+        return self.network_rpcapi.call(context, msg)
 
     @refresh_cache
     def allocate_interface_for_instance(self, context, instance, network_id,
@@ -203,9 +203,9 @@ class API(base.Base):
         args['network_id'] = network_id
         args['rxtx_factor'] = instance['instance_type']['rxtx_factor']
 
-        return rpc.call(context, CONF.network_topic,
-                        {'method': 'allocate_interface_for_instance',
-                         'args': args})
+        msg = {'method': 'allocate_interface_for_instance',
+               'args': args}
+        return self.network_rpcapi.call(context, msg)
 
     @wrap_check_policy
     @refresh_cache
