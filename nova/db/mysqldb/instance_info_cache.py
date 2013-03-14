@@ -56,6 +56,6 @@ class Mixin(object):
         return cls.get(conn, context, instance_uuid)
 
     @classmethod
-    def soft_delete(cls, conn, instance_uuid):
+    def soft_delete(cls, conn, context, instance_uuid):
         return super(Mixin, cls).soft_delete(conn,
                 _WHERE_STR, instance_uuid=instance_uuid)
