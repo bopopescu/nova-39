@@ -175,4 +175,4 @@ class API(object):
     def instance_info_cache_delete(self, ctxt, instance_uuid):
         method = models.Models.InstanceInfoCache.soft_delete
         with self.pool.get() as conn:
-            method(conn, ctxt, instance_uuid)
+            method(conn, instance_uuid)
