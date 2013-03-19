@@ -628,6 +628,7 @@ class QuantumManager(manager.SchedulerDependentManager):
             for ip_addr in interface.get('ip_addresses', []):
                 if ip_addr.get('address') == address:
                     # found it!
+                    interface_with_ip = interface
                     interface_id = interface.get('id')
                     ip_block = ip_addr.get('ip_block', {})
                     network_id = ip_block.get('network_id')
@@ -637,6 +638,13 @@ class QuantumManager(manager.SchedulerDependentManager):
         else:
             LOG.error(_('IP could not be found on any interface. '
                         'IP Deallocation failed.'))
+            return
+
+        # make sure this isn't the last address on this interface
+        v4_addresses = [ip for ip in interface_with_ip['ip_addresses']
+                        if ip.get('version') == 4]
+        if len(v4_addresses) <= 1:
+            LOG.error(_('Cannot remove last v4 address from interface'))
             return
 
         # deallocate the ip
