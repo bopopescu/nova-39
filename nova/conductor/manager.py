@@ -395,10 +395,14 @@ class ConductorManager(manager.Manager):
 
     def notify_usage_exists(self, context, instance, current_period=False,
                             ignore_missing_network_data=True,
-                            system_metadata=None, extra_usage_info=None):
+                            system_metadata=None,
+                            extra_usage_info=None,
+                            include_bandwidth=False):
         compute_utils.notify_usage_exists(context, instance, current_period,
                                           ignore_missing_network_data,
-                                          system_metadata, extra_usage_info)
+                                          system_metadata,
+                                          extra_usage_info,
+                                          include_bandwidth)
 
     def security_groups_trigger_handler(self, context, event, args):
         self.security_group_api.trigger_handler(event, context, *args)
