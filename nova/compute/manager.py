@@ -1698,6 +1698,10 @@ class ComputeManager(manager.SchedulerDependentManager):
         """
         context = context.elevated()
 
+        # NOTE(apmelton): We need the original launched_at when we send
+        # the exists later on.
+        orig_launched_at = instance['launched_at']
+
         # This is a grievous hack to make usage happy for the moment
         # We will remove this when their system is fixed. (mdragon)
         instance = self._instance_update(context,
@@ -1743,6 +1747,10 @@ class ComputeManager(manager.SchedulerDependentManager):
             # to point to the new one... we have to override it.
             orig_image_ref_url = glance.generate_image_url(orig_image_ref)
             extra_usage_info = {'image_ref_url': orig_image_ref_url}
+            # Note(apmelton): This exists represents the past state of the
+            # instance, thus it needs the original launched_at so usage can
+            # tell how long it's been around for.
+            extra_usage_info['launched_at'] = orig_launched_at
             self.conductor_api.notify_usage_exists(context, instance,
                     current_period=True, system_metadata=orig_sys_metadata,
                     extra_usage_info=extra_usage_info)
@@ -2290,16 +2298,18 @@ class ComputeManager(manager.SchedulerDependentManager):
         if not migration:
             migration = self.conductor_api.migration_get(context, migration_id)
 
+        # NOTE(comstud): A revert_resize is essentially a resize back to
+        # the old size, so we need to send a usage event here.
+        # NOTE(apmelton): This exists needs to be sent before we update the
+        # launched_at, otherwise we can't tell how long it was around for.
+        self.conductor_api.notify_usage_exists(context, instance,
+                                               current_period=True)
+
         # This is a grievous hack to make usage happy for the moment
         # We will remove this when their system is fixed. (mdragon)
         instance = self._instance_update(context, instance['uuid'],
                 launched_at=timeutils.utcnow())
         # Endhack.
-
-        # NOTE(comstud): A revert_resize is essentially a resize back to
-        # the old size, so we need to send a usage event here.
-        self.conductor_api.notify_usage_exists(
-                context, instance, current_period=True)
 
         with self._error_out_instance_on_exception(context, instance['uuid'],
                                                    reservations):
@@ -2479,6 +2489,12 @@ class ComputeManager(manager.SchedulerDependentManager):
             LOG.debug(_("No node specified, defaulting to %(node)s") %
                       locals())
 
+        # NOTE(apmelton): This exists needs to be sent before
+        # launched_at is updated, otherwise usage can't tell how long
+        # it's been around for.
+        self.conductor_api.notify_usage_exists(context, instance,
+                                               current_period=True)
+
         # This is a grievous hack to make usage happy for the moment
         # We will remove this when their system is fixed. (mdragon)
         instance = self._instance_update(context,
@@ -2487,8 +2503,6 @@ class ComputeManager(manager.SchedulerDependentManager):
 
         with self._error_out_instance_on_exception(context, instance['uuid'],
                                                    reservations):
-            self.conductor_api.notify_usage_exists(
-                    context, instance, current_period=True)
             self._notify_about_instance_usage(
                     context, instance, "resize.prep.start")
             try:
