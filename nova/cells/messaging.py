@@ -1241,6 +1241,8 @@ class MessageRunner(object):
 
     def bw_usage_update_at_top(self, ctxt, bw_update_info):
         """Update bandwidth usage at top level cell."""
+        # NOTE(comstud): DISABLED.  DO NOT SEND TO PARENT CELLS.
+        return
         message = _BroadcastMessage(self, ctxt, 'bw_usage_update_at_top',
                                     dict(bw_update_info=bw_update_info),
                                     'up', run_locally=False)

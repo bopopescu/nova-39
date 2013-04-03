@@ -1163,6 +1163,7 @@ class CellsBroadcastMethodsTestCase(test.TestCase):
                 fake_instance_fault)
 
     def test_bw_usage_update_at_top(self):
+        self.skipTest("This functionality has been temporarily disabled.")
         fake_bw_update_info = {'uuid': 'fake_uuid',
                                'mac': 'fake_mac',
                                'start_period': 'fake_start_period',
