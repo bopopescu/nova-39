@@ -35,3 +35,6 @@ Requiem
 
 #NOTE(ameade) This is for the scheduled images extension temporarily here
 qonos
+
+# NOTE(jkoelker) This is for the RackConnect Ghettoness
+aiclib>0.3

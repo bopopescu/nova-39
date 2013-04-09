@@ -30,6 +30,7 @@ from nova import exception
 from nova import manager
 from nova.network import api as network_api
 from nova.network import model
+from nova.network.quantum2 import aiclib_connection
 from nova.network.quantum2 import melange_connection
 from nova.network.quantum2 import quantum_connection
 from nova.openstack.common import excutils
@@ -64,6 +65,26 @@ quantum2_opts = [
     cfg.ListOpt('network_global_uuid_label_map',
                 default=[],
                 help='List of uuid,label,uuid,label... for default networks'),
+    cfg.ListOpt('rackconnect_roles',
+                default=[],
+                help='List of keystone roles to trigger RackConnect logic'),
+    cfg.ListOpt('rackconnect_public_gateway_roles',
+                default=[],
+                help=('RackConnect roles if present will not set gateway '
+                      'on create_network')),
+    cfg.StrOpt('rackconnect_servicenet',
+               default='private',
+               help='Servicenet network name'),
+    cfg.StrOpt('rackconnect_servicenet_policy',
+               default=None,
+               help='Base Servicenet Security Policy'),
+    cfg.BoolOpt('rackconnect_clone_servicenet_policy',
+                default=False,
+                help='Use the base Servicenet Security Policy as a template'),
+    cfg.BoolOpt('rackconnect_clone_servicenet_policy_per_tenant',
+                default=False,
+                help=('When cloning use one policy per tenant instead of per '
+                      'port')),
 ]
 
 CONF.register_opts(quantum2_opts)
@@ -113,6 +134,7 @@ class QuantumManager(manager.SchedulerDependentManager):
 
         self.q_conn = quantum_connection.QuantumClientConnection()
         self.m_conn = melange_connection.MelangeConnection()
+        self.a_conn = aiclib_connection.AICLibConnection()
 
         # NOTE(tr3buchet): map for global uuids
         #                  if these should change, restart this service
@@ -123,11 +145,17 @@ class QuantumManager(manager.SchedulerDependentManager):
         #                 priv_uuid: '1111111111-1111-1111-1111-111111111111'}
         # there will be only one (each way) entry per label
         self._nw_map = {}
+        self._rackconnect_servicenet = None
+
         if CONF.network_global_uuid_label_map:
             self._nw_map = self._get_nw_map()
             LOG.debug('the self._nw_map is |%s|' % self._nw_map)
         else:
             self._nw_map = {}
+
+        self._rackconnect_roles = set(CONF.rackconnect_roles)
+        rc_public_gateway_roles = CONF.rackconnect_public_gateway_roles
+        self._rc_public_gateway_roles = set(rc_public_gateway_roles)
 
         super(QuantumManager, self).__init__(service_name='network',
                                              *args, **kwargs)
@@ -151,6 +179,11 @@ class QuantumManager(manager.SchedulerDependentManager):
                 if global_uuid not in the_map:
                     the_map[global_uuid] = nw['id']
                     the_map[nw['id']] = global_uuid
+
+            if (nw['label'] == CONF.rackconnect_servicenet and
+                    self._rackconnect_servicenet is None):
+                self._rackconnect_servicenet = nw['id']
+
         return the_map
 
     def init_host(self):
@@ -233,6 +266,9 @@ class QuantumManager(manager.SchedulerDependentManager):
             raise exception.NetworkFoundMultipleTimes(network_id=network_id)
 
         return networks[0]
+
+    def _is_haz_rackconnect(self, context):
+        return set(context.roles) & self._rackconnect_roles
 
     def _normalize_network(self, network):
         # NOTE(jkoelker) We don't want to expose out a bunch of melange
@@ -408,6 +444,7 @@ class QuantumManager(manager.SchedulerDependentManager):
     def allocate_interface_for_instance(self, context, instance_id,
                                         rxtx_factor, project_id, network_id,
                                         **kwargs):
+        rackconnect = self._is_haz_rackconnect(context)
         networks = self._discover_networks(tenant_id=project_id,
                                            requested_networks=[(network_id,)])
         attached_vifs = self.m_conn.get_allocated_networks(instance_id)
@@ -421,8 +458,9 @@ class QuantumManager(manager.SchedulerDependentManager):
         vif = self.m_conn.allocate_interface_for_instance(project_id,
                                                           instance_id,
                                                           networks[0])
-        self._establish_interface_and_port(vif, instance_id, project_id,
-                                           rxtx_factor)
+        self._establish_interface_and_port(context, vif, instance_id,
+                                           project_id, rxtx_factor,
+                                           rackconnect=rackconnect)
         return self._clean_vif_list([vif])
 
     def _discover_networks(self, tenant_id, requested_networks=None):
@@ -449,8 +487,9 @@ class QuantumManager(manager.SchedulerDependentManager):
                      'tenant_id': net[1]} for net in networks]
         return networks
 
-    def _establish_interface_and_port(self, vif, instance_id, tenant_id,
-                                      rxtx_factor):
+    def _establish_interface_and_port(self, contex, vif, instance_id,
+                                      tenant_id, rxtx_factor,
+                                      rackconnect=False):
         nova_id = CONF.default_availability_zone
         q_default_tenant_id = CONF.quantum_default_tenant_id
         pairs = []
@@ -479,13 +518,51 @@ class QuantumManager(manager.SchedulerDependentManager):
 
             pairs = self._generate_address_pairs(vif, ips)
 
-        self.q_conn.create_and_attach_port(network_tenant_id,
-                                           network_id,
-                                           vif['id'],
-                                           vm_id=instance_id,
-                                           rxtx_factor=rxtx_factor,
-                                           nova_id=nova_id,
-                                           allowed_address_pairs=pairs)
+        kwargs = dict(vm_id=instance_id, rxtx_factor=rxtx_factor,
+                      nova_id=nova_id, allowed_address_pairs=pairs)
+        port_id = self.q_conn.create_and_attach_port(network_tenant_id,
+                                                     network_id,
+                                                     vif['id'],
+                                                     **kwargs)
+
+        if rackconnect and network_id == self._rackconnect_servicenet:
+            self._can_haz_rc_policy_for_port(port_id, tenant_id, instance_id)
+
+    def _can_haz_rc_policy_for_port(self, port_id, tenant_id, instance_id):
+        template_id = CONF.rackconnect_servicenet_policy
+
+        if not template_id:
+            msg = _('Racconnect Service Policy Base not specifed. '
+                    'Skipping applying policies to port %(port_id)s')
+            LOG.debug(msg % dict(port_id=port_id))
+            return
+
+        msg = _('Adding %(port_id)s to securityprofile '
+                '%(securityprofile_id)s.')
+
+        # NOTE(jkoelker) Cluster wide shared policy
+        if not CONF.rackconnect_clone_servicenet_policy:
+            LOG.debug(msg % dict(port_id=port_id,
+                                 securityprofile_id=template_id))
+            self.a_conn.set_securityprofile(port_id, template_id)
+            return
+
+        # NOTE(jkoelker) Per port policy
+        if not CONF.rackconnect_clone_servicenet_policy_per_tenant:
+            args = (tenant_id, template_id, instance_id)
+            sp = self.a_conn.create_securityprofile_from_template(*args)
+
+        # NOTE(jkoelker) Per tenant policy
+        else:
+            sp = self.a_conn.get_securityprofile(tenant_id=tenant_id)
+
+            if sp is None:
+                args = (tenant_id, template_id)
+                sp = self.a_conn.create_securityprofile_from_template(*args)
+
+        LOG.debug(msg % dict(port_id=port_id,
+                             securityprofile_id=sp['uuid']))
+        self.a_conn.set_securityprofile(port_id, sp['uuid'])
 
     #
     # NOTE(jkoelker) Ahoy! Here be the API implementations, ya land louver
@@ -500,6 +577,7 @@ class QuantumManager(manager.SchedulerDependentManager):
         tenant_id = project_id
 
         networks = self._discover_networks(tenant_id, requested_networks)
+        rackconnect = self._is_haz_rackconnect(context)
 
         vifs = []
         try:
@@ -515,8 +593,9 @@ class QuantumManager(manager.SchedulerDependentManager):
 
         def _establish(vif):
             try:
-                self._establish_interface_and_port(vif, instance_id, tenant_id,
-                                                   rxtx_factor)
+                self._establish_interface_and_port(context, vif, instance_id,
+                                                   tenant_id, rxtx_factor,
+                                                   rackconnect=rackconnect)
             except Exception:
                 exc_info = sys.exc_info()
                 return exc_info
@@ -668,6 +747,32 @@ class QuantumManager(manager.SchedulerDependentManager):
         #                you choose ipv6 or ipv4 but not both
         tenant_id = context.project_id or CONF.quantum_default_tenant_id
         nova_id = CONF.default_availability_zone
+        policy_length = 1
+        rackconnect = self._is_haz_rackconnect(context)
+
+        if rackconnect:
+            # NOTE(jkoelker) The format of cidr was checked in the
+            #                os_networks_v2 extension, so we know we
+            #                have a valid cidr.
+            net = netaddr.IPNetwork(cidr)
+
+            # NOTE(jkoelker) This should really live in the extension
+            #                so we can return a more informative error
+            #                back to the user, but that will polute the
+            #                config on the api nodes as well. Since this
+            #                code is going away (hopefully, eventually,
+            #                hey gotta belib in something) do the quick
+            #                and dirty here instead, and document that
+            #                RackConect customers require at least a /29
+            if net.size < 8:
+                req = 'A /29 or greater is required for RackConnect.'
+                raise exception.NetworkNotCreated(req=req)
+
+            policy_length = 4
+
+            # NOTE(jkoelker) Check and set the default gateway
+            if not (rackconnect & self._rc_public_gateway_roles):
+                gateway = str(net[1])
 
         # NOTE(jhammond) cidr has been checked in os_networksv2 for kosher
         network_id = self.q_conn.create_network(tenant_id, label,
@@ -681,7 +786,9 @@ class QuantumManager(manager.SchedulerDependentManager):
         policy = self.m_conn.create_ip_policy(tenant_id, network_id,
                                               ('Policy for network %s' %
                                                network_id))
-        self.m_conn.create_unusable_range_in_policy(tenant_id, policy['id'])
+        self.m_conn.create_unusable_range_in_policy(tenant_id,
+                                                    policy['id'],
+                                                    length=policy_length)
         ip_block = self.m_conn.create_ip_block(tenant_id,
                                                str(cidr),
                                                network_id,

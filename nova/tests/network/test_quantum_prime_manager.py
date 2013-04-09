@@ -79,6 +79,7 @@ def _fake_networks(network_count, tenant_id):
     network_id is the id from quantum. Dumb"""
     return [{'id': str(uuidutils.generate_uuid()),
              'name': 'net%d' % i,
+             'network_name': 'qnet%s' % i,
              'cidr': '10.0.0.0/8',
              'network_id': str(uuidutils.generate_uuid()),
              'tenant_id': tenant_id} for i in xrange(network_count)]
@@ -298,6 +299,180 @@ class Quantum2ManagerTestsAllocateForInstanceGlobalIDs(test.TestCase):
                      for n in expected_networks])
             allocate_for_instance_networks.assert_called_once_with(*args)
             self.assertTrue(create_and_attach.called)
+
+
+class Quantum2ManagerTestRackConnect(test.TestCase):
+    def setUp(self):
+        super(Quantum2ManagerTestRackConnect, self).setUp()
+        self.tenant_id = 'project1'
+        self.rc_role = 'lulzconnect'
+        self.q_tenant_id = 'quantum_tennant'
+        self.servicenet_label = 'private'
+        self.template_id = str(uuidutils.generate_uuid())
+        self.map = [str(uuidutils.generate_uuid()), self.servicenet_label]
+
+        self.flags(network_global_uuid_label_map=self.map,
+                   quantum_default_tenant_id=self.q_tenant_id,
+                   rackconnect_roles=[self.rc_role],
+                   rackconnect_servicenet=self.servicenet_label,
+                   rackconnect_servicenet_policy=self.template_id)
+
+        self.context = context.RequestContext(user_id=1,
+                                              project_id=self.tenant_id,
+                                              roles=[self.rc_role])
+
+        self.default_nets = [{'id': str(uuidutils.generate_uuid()),
+                              'network_name': self.servicenet_label,
+                              'cidr': '10.0.0.0/8',
+                              'network_id': str(uuidutils.generate_uuid()),
+                              'tenant_id': self.q_tenant_id}]
+        self.networks = _fake_networks(1, self.tenant_id)
+        self.vifs = [_vif_helper(self.tenant_id, n['network_id'],
+                                 name=n['network_name'])
+                     for n in self.networks + self.default_nets]
+        self.port_ids = [str(uuidutils.generate_uuid())
+                         for vif in self.vifs]
+        self.sp_port_id = self.port_ids[-1]
+
+        self.q_client = ('nova.network.quantum2.quantum_connection.'
+                         'QuantumClientConnection')
+        self.m_client = ('nova.network.quantum2.melange_connection.'
+                         'MelangeConnection')
+        self.a_client = ('nova.network.quantum2.aiclib_connection.'
+                         'AICLibConnection')
+
+    def get_networks_for_tenant(self, tenant_id, *args, **kwargs):
+        if tenant_id == self.q_tenant_id:
+            return self.default_nets
+        return self.networks
+
+    def test_allocate_for_instance_global_policy(self):
+        with contextlib.nested(
+            mock.patch(self.q_client + '.create_and_attach_port'),
+            mock.patch(self.m_client + '.get_networks_for_tenant'),
+            mock.patch(self.m_client + '.allocate_for_instance_networks'),
+            mock.patch(self.a_client + '.set_securityprofile'),
+        ) as (create_and_attach,
+              get_networks_for_tenant,
+              allocate_for_instance_networks,
+              set_securityprofile):
+
+            get_networks_for_tenant.side_effect = self.get_networks_for_tenant
+            allocate_for_instance_networks.return_value = self.vifs
+            create_and_attach.side_effect = self.port_ids
+
+            net_manager = manager.QuantumManager()
+            net_manager.allocate_for_instance(self.context,
+                                              instance_id=1,
+                                              rxtx_factor=1,
+                                              project_id='project1',
+                                              host='host')
+            set_securityprofile.assert_called_once_with(self.sp_port_id,
+                                                        self.template_id)
+
+    def test_allocate_for_instance_per_port_policy(self):
+        self.flags(rackconnect_clone_servicenet_policy=True)
+        new_sp_id = str(uuidutils.generate_uuid())
+
+        with contextlib.nested(
+            mock.patch(self.q_client + '.create_and_attach_port'),
+            mock.patch(self.m_client + '.get_networks_for_tenant'),
+            mock.patch(self.m_client + '.allocate_for_instance_networks'),
+            mock.patch(self.a_client + '.set_securityprofile'),
+            mock.patch(self.a_client +
+                       '.create_securityprofile_from_template'),
+        ) as (create_and_attach,
+              get_networks_for_tenant,
+              allocate_for_instance_networks,
+              set_securityprofile,
+              create_sp_from_tmpl):
+
+            get_networks_for_tenant.side_effect = self.get_networks_for_tenant
+            allocate_for_instance_networks.return_value = self.vifs
+            create_and_attach.side_effect = self.port_ids
+            create_sp_from_tmpl.return_value = {'uuid': new_sp_id}
+
+            net_manager = manager.QuantumManager()
+            net_manager.allocate_for_instance(self.context,
+                                              instance_id=1,
+                                              rxtx_factor=1,
+                                              project_id='project1',
+                                              host='host')
+            create_sp_from_tmpl.assert_called_once_with(self.tenant_id,
+                                                        self.template_id,
+                                                        mock.ANY)
+            set_securityprofile.assert_called_once_with(self.sp_port_id,
+                                                        new_sp_id)
+
+    def test_allocate_for_instance_per_tenant_policy_existing(self):
+        self.flags(rackconnect_clone_servicenet_policy=True,
+                   rackconnect_clone_servicenet_policy_per_tenant=True)
+        new_sp_id = str(uuidutils.generate_uuid())
+
+        with contextlib.nested(
+            mock.patch(self.q_client + '.create_and_attach_port'),
+            mock.patch(self.m_client + '.get_networks_for_tenant'),
+            mock.patch(self.m_client + '.allocate_for_instance_networks'),
+            mock.patch(self.a_client + '.set_securityprofile'),
+            mock.patch(self.a_client + '.get_securityprofile'),
+        ) as (create_and_attach,
+              get_networks_for_tenant,
+              allocate_for_instance_networks,
+              set_securityprofile,
+              get_securityprofile,
+              ):
+
+            get_networks_for_tenant.side_effect = self.get_networks_for_tenant
+            allocate_for_instance_networks.return_value = self.vifs
+            create_and_attach.side_effect = self.port_ids
+            get_securityprofile.return_value = {'uuid': new_sp_id}
+
+            net_manager = manager.QuantumManager()
+            net_manager.allocate_for_instance(self.context,
+                                              instance_id=1,
+                                              rxtx_factor=1,
+                                              project_id='project1',
+                                              host='host')
+            set_securityprofile.assert_called_once_with(self.sp_port_id,
+                                                        new_sp_id)
+
+    def test_allocate_for_instance_per_tenant_policy_new(self):
+        self.flags(rackconnect_clone_servicenet_policy=True,
+                   rackconnect_clone_servicenet_policy_per_tenant=True)
+        new_sp_id = str(uuidutils.generate_uuid())
+
+        with contextlib.nested(
+            mock.patch(self.q_client + '.create_and_attach_port'),
+            mock.patch(self.m_client + '.get_networks_for_tenant'),
+            mock.patch(self.m_client + '.allocate_for_instance_networks'),
+            mock.patch(self.a_client + '.set_securityprofile'),
+            mock.patch(self.a_client +
+                       '.create_securityprofile_from_template'),
+            mock.patch(self.a_client + '.get_securityprofile'),
+        ) as (create_and_attach,
+              get_networks_for_tenant,
+              allocate_for_instance_networks,
+              set_securityprofile,
+              create_sp_from_tmpl,
+              get_securityprofile,
+              ):
+
+            get_networks_for_tenant.side_effect = self.get_networks_for_tenant
+            allocate_for_instance_networks.return_value = self.vifs
+            create_and_attach.side_effect = self.port_ids
+            create_sp_from_tmpl.return_value = {'uuid': new_sp_id}
+            get_securityprofile.return_value = None
+
+            net_manager = manager.QuantumManager()
+            net_manager.allocate_for_instance(self.context,
+                                              instance_id=1,
+                                              rxtx_factor=1,
+                                              project_id='project1',
+                                              host='host')
+            create_sp_from_tmpl.assert_called_once_with(self.tenant_id,
+                                                        self.template_id)
+            set_securityprofile.assert_called_once_with(self.sp_port_id,
+                                                        new_sp_id)
 
 
 class Quantum2ManagerTestsAllocateForInstance(test.TestCase):

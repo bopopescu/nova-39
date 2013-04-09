@@ -116,6 +116,7 @@ class QuantumClientConnection(object):
         attach_data = {'attachment': {'id': interface_id}}
         self.client.attach_resource(net_id, port_id, attach_data,
                                     tenant=tenant_id)
+        return port_id
 
     def update_port(self, tenant_id, net_id, port_id, **kwargs):
         """Updates a port with the specified kwargs."""
