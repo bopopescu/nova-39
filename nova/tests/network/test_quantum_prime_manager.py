@@ -1116,7 +1116,7 @@ class Quantum2GetInstanceUUIDS(test.TestCase):
 
         uuids = self.net_manager.get_instance_uuids_by_ip_filter(self.context,
                                                                  filters)
-        self.assertEquals(uuids, [{'instance_uuid':'instance_uuid'}])
+        self.assertEquals(uuids, [{'instance_uuid': 'instance_uuid'}])
 
 
 class Quantum2VirtualInterfaces(test.TestCase):
@@ -1215,10 +1215,10 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
     def setUp(self):
         super(Quantum2ManagerTestsAddRemoveFixedIP, self).setUp()
 
+        map = ['00000000-0000-0000-0000-000000000000', 'public',
+               '11111111-1111-1111-1111-111111111111', 'private']
         self.flags(quantum_use_port_security=True,
-                   network_global_uuid_label_map=[
-            '00000000-0000-0000-0000-000000000000', 'public',
-            '11111111-1111-1111-1111-111111111111', 'private'])
+                   network_global_uuid_label_map=map)
 
         self.tenant_id = 'default'
         self.context = context.RequestContext(user_id=1,
@@ -1267,15 +1267,14 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
 
             ip_block = {'network_id': '1'}
             get_allocated_networks.return_value = [
-                        {'id': 'fake_uuid',
-                         'ip_addresses':
-                            [{'address': '10.0.0.3',
-                              'ip_block': ip_block}]}]
+                {'id': 'fake_uuid',
+                 'ip_addresses': [{'address': '10.0.0.3',
+                                    'ip_block': ip_block}]}]
 
             get_interface_for_device.return_value = {
-                    'interface': {'mac_address': 'xx.xx.xx.xx.xx.xx.xx',
-                                  'ip_addresses': [{'address': '10.0.0.5'},
-                                                   {'address': '10.0.0.6'}]}}
+                'interface': {'mac_address': 'xx.xx.xx.xx.xx.xx.xx',
+                              'ip_addresses': [{'address': '10.0.0.5'},
+                                               {'address': '10.0.0.6'}]}}
 
             get_port_by_attachment.return_value = 'some-uuid'
 
@@ -1301,15 +1300,14 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
 
             ip_block = {'network_id': self.default_networks[1]['network_id']}
             get_allocated_networks.return_value = [
-                        {'id': 'fake_uuid',
-                         'ip_addresses':
-                            [{'address': '10.0.0.3',
-                              'ip_block': ip_block}]}]
+                {'id': 'fake_uuid',
+                 'ip_addresses': [{'address': '10.0.0.3',
+                                   'ip_block': ip_block}]}]
 
             get_interface_for_device.return_value = {
-                    'interface': {'mac_address': 'xx.xx.xx.xx.xx.xx.xx',
-                                  'ip_addresses': [{'address': '10.0.0.5'},
-                                                   {'address': '10.0.0.6'}]}}
+                'interface': {'mac_address': 'xx.xx.xx.xx.xx.xx.xx',
+                              'ip_addresses': [{'address': '10.0.0.5'},
+                                               {'address': '10.0.0.6'}]}}
             get_port_by_attachment.return_value = 'some-uuid'
 
             net_id = '11111111-1111-1111-1111-111111111111'
@@ -1358,19 +1356,18 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
 
             ip_block = {'network_id': 'some_uuid'}
             get_allocated_networks.return_value = [
-                        {'id': 'fake_uuid',
-                         'ip_addresses': [
-                            {'address': '10.0.0.3',
-                             'ip_block': ip_block,
-                             'version': 4},
-                            {'address': '10.0.0.4',
-                             'ip_block': ip_block,
-                             'version': 4}]}]
+                {'id': 'fake_uuid',
+                 'ip_addresses': [{'address': '10.0.0.3',
+                                   'ip_block': ip_block,
+                                   'version': 4},
+                                  {'address': '10.0.0.4',
+                                   'ip_block': ip_block,
+                                   'version': 4}]}]
 
             get_interface_for_device.return_value = {
-                    'interface': {'mac_address': 'xx.xx.xx.xx.xx.xx.xx',
-                                  'ip_addresses': [{'address': '10.0.0.5'},
-                                                   {'address': '10.0.0.6'}]}}
+                'interface': {'mac_address': 'xx.xx.xx.xx.xx.xx.xx',
+                              'ip_addresses': [{'address': '10.0.0.5'},
+                                               {'address': '10.0.0.6'}]}}
             get_port_by_attachment.return_value = 'some-uuid'
 
             self.net_manager.remove_fixed_ip_from_instance(self.context,
@@ -1395,16 +1392,15 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
 
             ip_block = {'network_id': 'some_uuid'}
             get_allocated_networks.return_value = [
-                        {'id': 'fake_uuid',
-                         'ip_addresses': [
-                             {'address': '10.0.0.3',
-                              'ip_block': ip_block,
-                              'version': 4}]}]
+                {'id': 'fake_uuid',
+                 'ip_addresses': [{'address': '10.0.0.3',
+                                   'ip_block': ip_block,
+                                   'version': 4}]}]
 
             get_interface_for_device.return_value = {
-                    'interface': {'mac_address': 'xx.xx.xx.xx.xx.xx.xx',
-                                  'ip_addresses': [{'address': '10.0.0.5'},
-                                                   {'address': '10.0.0.6'}]}}
+                'interface': {'mac_address': 'xx.xx.xx.xx.xx.xx.xx',
+                              'ip_addresses': [{'address': '10.0.0.5'},
+                                               {'address': '10.0.0.6'}]}}
             get_port_by_attachment.return_value = 'some-uuid'
 
             self.net_manager.remove_fixed_ip_from_instance(self.context,
@@ -1431,8 +1427,8 @@ class Quantum2ManagerTestsAddRemoveFixedIP(test.TestCase):
             get_interface_for_device.return_value = {}
 
             self.net_manager.remove_fixed_ip_from_instance(self.context,
-                                                         instance_id='1',
-                                                         host='host',
-                                                         address='10.0.0.3')
+                                                           instance_id='1',
+                                                           host='host',
+                                                           address='10.0.0.3')
             self.assertFalse(deallocate_ip_for_instance.called)
             self.assertFalse(update_port.called)

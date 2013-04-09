@@ -539,7 +539,7 @@ class QuantumManager(manager.SchedulerDependentManager):
            Takes no action if unnecessary by CONF or if vif cannot be found
         """
         if (CONF.quantum_use_port_security and
-            CONF.quantum_default_tenant_id == tenant_id):
+                CONF.quantum_default_tenant_id == tenant_id):
 
             # get the whole vif record
             vif = self.m_conn.get_interface_for_device(instance_id,
@@ -572,7 +572,9 @@ class QuantumManager(manager.SchedulerDependentManager):
                                                          interface_id)
             # update the port
             self.q_conn.update_allowed_address_pairs_on_port(tenant_id,
-                                            network_id, port_id, pairs)
+                                                             network_id,
+                                                             port_id,
+                                                             pairs)
 
     def add_fixed_ip_to_instance(self, context, instance_id, host, network_id,
                                  **kwargs):
@@ -812,7 +814,7 @@ class QuantumManager(manager.SchedulerDependentManager):
                                                                   address)
         instances = [db.instance_get_by_uuid(context,
                                              id) for id in instance_ids]
-        return [{'instance_uuid':instance.uuid} for instance in instances]
+        return [{'instance_uuid': instance.uuid} for instance in instances]
 
     # NOTE(jkoelker) Stub function. validate_networks is only called
     #                in the compute api prior to creating the instance
