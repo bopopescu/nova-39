@@ -809,8 +809,13 @@ class _BroadcastMessageMethods(_BaseMessageMethods):
                     for md in instance['system_metadata']])
             instance['system_metadata'] = sys_metadata
 
-        LOG.debug(_("Got update for instance %(instance_uuid)s: "
-                "%(instance)s") % locals())
+        # NOTE(comstud): Ugly hack.  Real instance updates should always
+        # contain 'vm_state' in them.  If 'vm_state' doesn't exist, it
+        # means that this is actually an info_cache-only update.
+        if 'vm_state' in instance:
+            do_inst_update = True
+        else:
+            do_inst_update = False
 
         # To attempt to address out-of-order messages, do some sanity
         # checking on the VM state.
@@ -827,18 +832,23 @@ class _BroadcastMessageMethods(_BaseMessageMethods):
         if expected_vm_states:
                 instance['expected_vm_state'] = expected_vm_states
 
-        # It's possible due to some weird condition that the instance
-        # was already set as deleted... so we'll attempt to update
-        # it with permissions that allows us to read deleted.
-        with utils.temporary_mutation(message.ctxt, read_deleted="yes"):
-            try:
-                self.db.instance_update(message.ctxt, instance_uuid,
-                        instance, update_cells=False)
-            except exception.NotFound:
-                # FIXME(comstud): Strange.  Need to handle quotas here,
-                # if we actually want this code to remain..
-                self.db.instance_create(message.ctxt, instance)
+        if do_inst_update:
+            LOG.debug(_("Got update for instance %(instance_uuid)s: "
+                    "%(instance)s") % locals())
+            # It's possible due to some weird condition that the instance
+            # was already set as deleted... so we'll attempt to update
+            # it with permissions that allows us to read deleted.
+            with utils.temporary_mutation(message.ctxt, read_deleted="yes"):
+                try:
+                    self.db.instance_update(message.ctxt, instance_uuid,
+                            instance, update_cells=False)
+                except exception.NotFound:
+                    # FIXME(comstud): Strange.  Need to handle quotas here,
+                    # if we actually want this code to remain..
+                    self.db.instance_create(message.ctxt, instance)
         if info_cache:
+            LOG.debug(_("Got update for info_cache: %(info_cache)s"),
+                    locals())
             try:
                 self.db.instance_info_cache_update(message.ctxt,
                         instance_uuid, info_cache, update_cells=False)

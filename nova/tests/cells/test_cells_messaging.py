@@ -1008,6 +1008,7 @@ class CellsBroadcastMethodsTestCase(test.TestCase):
                          'metadata': 'fake',
                          'info_cache': fake_info_cache,
                          'system_metadata': fake_sys_metadata,
+                         'vm_state': 'active',
                          'other': 'meow'}
         expected_sys_metadata = {'key1': 'value1',
                                  'key2': 'value2'}
@@ -1016,6 +1017,7 @@ class CellsBroadcastMethodsTestCase(test.TestCase):
         expected_instance = {'system_metadata': expected_sys_metadata,
                              'cell_name': expected_cell_name,
                              'other': 'meow',
+                             'vm_state': 'active',
                              'uuid': 'fake_uuid'}
 
         # To show these should not be called in src/mid-level cell
