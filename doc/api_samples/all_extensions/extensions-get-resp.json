@@ -489,7 +489,7 @@
             "updated": "2012-10-28T00:00:00-00:00"
         },
         {
-            "alias": "os-si-image-schedule",
+            "alias": "rax-si-image-schedule",
             "description": "Enables automatic scheduled images to be taken of a server.",
             "links": [],
             "name": "ScheduledImages",

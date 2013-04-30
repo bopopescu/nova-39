@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<servers xmlns:OS-SI="http://docs.openstack.org/servers/api/ext/scheduled_images/v1.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns="http://docs.openstack.org/compute/api/v1.1">
+<servers xmlns:RAX-SI="http://docs.openstack.org/servers/api/ext/scheduled_images/v1.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns="http://docs.openstack.org/compute/api/v1.1">
   <server name="new-server-test" id="59a619a2-2374-477e-9d79-4febb191fa80">
     <atom:link href="http://openstack.example.com/v2/openstack/servers/59a619a2-2374-477e-9d79-4febb191fa80" rel="self"/>
     <atom:link href="http://openstack.example.com/openstack/servers/59a619a2-2374-477e-9d79-4febb191fa80" rel="bookmark"/>

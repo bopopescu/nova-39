@@ -1253,14 +1253,15 @@ class ScheduledImagesJsonTest(ServersSampleBase):
 
     def test_image_schedule_post(self):
         subs = self._get_regexes()
-        response = self._do_post('servers/%s/os-si-image-schedule' % self.uuid,
+        response = self._do_post(('servers/%s/rax-si-image-schedule' %
+                                   self.uuid),
                                  'image-schedule-post-req', subs)
         return self._verify_response('image-schedule-post-resp',
                                       subs, response, 200)
 
     def test_image_schedule_get(self):
         subs = self._get_regexes()
-        response = self._do_get('servers/%s/os-si-image-schedule' % self.uuid)
+        response = self._do_get('servers/%s/rax-si-image-schedule' % self.uuid)
         return self._verify_response('image-schedule-get-resp',
                                       subs, response, 200)
 

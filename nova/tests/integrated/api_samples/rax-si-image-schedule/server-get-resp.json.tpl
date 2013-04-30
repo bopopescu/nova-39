@@ -1,46 +1,44 @@
 {
     "server": {
-        "OS-SI:image_schedule": {
-            "retention": 7
-        },
+        "RAX-SI:image_schedule": {"retention": %(int)s},
         "accessIPv4": "",
         "accessIPv6": "",
         "addresses": {
             "private": [
                 {
-                    "addr": "192.168.0.3",
+                    "addr": "%(ip)s",
                     "version": 4
                 }
             ]
         },
-        "created": "2013-03-29T19:52:15Z",
+        "created": "%(timestamp)s",
         "flavor": {
-            "id": "1",
+            "id": "%(int)s",
             "links": [
                 {
-                    "href": "http://openstack.example.com/openstack/flavors/1",
+                    "href": "%(host)s/openstack/flavors/%(int)s",
                     "rel": "bookmark"
                 }
             ]
         },
-        "hostId": "adeb10e7956e335d42baeeb8cb747bcb8fad96bdf6a33242fc9d0f98",
-        "id": "af248c5a-9fbd-4657-8272-a4657b514ed8",
+        "hostId": "%(hostid)s",
+        "id": "%(id)s",
         "image": {
-            "id": "70a599e0-31e7-49b7-b260-868f441e862b",
+            "id": "%(uuid)s",
             "links": [
                 {
-                    "href": "http://openstack.example.com/openstack/images/70a599e0-31e7-49b7-b260-868f441e862b",
+                    "href": "%(host)s/openstack/images/%(uuid)s",
                     "rel": "bookmark"
                 }
             ]
         },
         "links": [
             {
-                "href": "http://openstack.example.com/v2/openstack/servers/af248c5a-9fbd-4657-8272-a4657b514ed8",
+                "href": "%(host)s/v2/openstack/servers/%(id)s",
                 "rel": "self"
             },
             {
-                "href": "http://openstack.example.com/openstack/servers/af248c5a-9fbd-4657-8272-a4657b514ed8",
+                "href": "%(host)s/openstack/servers/%(id)s",
                 "rel": "bookmark"
             }
         ],
@@ -51,7 +49,7 @@
         "progress": 0,
         "status": "ACTIVE",
         "tenant_id": "openstack",
-        "updated": "2013-03-29T19:52:16Z",
+        "updated": "%(timestamp)s",
         "user_id": "fake"
     }
 }
