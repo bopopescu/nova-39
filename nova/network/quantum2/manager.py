@@ -624,7 +624,6 @@ class QuantumManager(manager.SchedulerDependentManager):
             vif = self.m_conn.get_interface_for_device(instance_id,
                                                        interface_id)
             # make sure we got a result
-            vif = vif.get('interface')
             if not vif:
                 LOG.exception(_('vif could not be found to generate allowed'
                                 'address pairs'))
