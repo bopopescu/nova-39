@@ -201,7 +201,8 @@ class API(base.Base):
         args['project_id'] = instance['project_id']
         args['host'] = instance['host']
         args['network_id'] = network_id
-        args['rxtx_factor'] = instance['instance_type']['rxtx_factor']
+        instance_type = instance_types.extract_instance_type(instance)
+        args['rxtx_factor'] = instance_type['rxtx_factor']
 
         msg = {'method': 'allocate_interface_for_instance',
                'args': args}
