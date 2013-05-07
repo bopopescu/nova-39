@@ -294,9 +294,11 @@ class ConductorManager(manager.Manager):
     def instance_info_cache_delete(self, context, instance):
         self.db.instance_info_cache_delete(context, instance['uuid'])
 
-    def instance_info_cache_update(self, context, instance, values):
+    def instance_info_cache_update(self, context, instance, values,
+                                   update_cells=True):
         self.db.instance_info_cache_update(context, instance['uuid'],
-                                           values)
+                                           values,
+                                           update_cells=update_cells)
 
     def instance_type_get(self, context, instance_type_id):
         result = self.db.instance_type_get(context, instance_type_id)

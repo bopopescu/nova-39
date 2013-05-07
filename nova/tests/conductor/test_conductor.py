@@ -351,11 +351,13 @@ class _BaseTestCase(object):
         fake_instance = {'uuid': 'fake-uuid'}
         self.mox.StubOutWithMock(db, 'instance_info_cache_update')
         db.instance_info_cache_update(self.context, 'fake-uuid',
-                                      fake_values)
+                                      fake_values,
+                                      update_cells='meow')
         self.mox.ReplayAll()
         self.conductor.instance_info_cache_update(self.context,
                                                   fake_instance,
-                                                  fake_values)
+                                                  fake_values,
+                                                  update_cells='meow')
 
     def test_instance_type_get(self):
         self.mox.StubOutWithMock(db, 'instance_type_get')

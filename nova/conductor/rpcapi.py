@@ -324,11 +324,13 @@ class ConductorAPI(nova.openstack.common.rpc.proxy.RpcProxy):
         msg = self.make_msg('action_event_finish', values=values_p)
         return self.call(context, msg, version='1.25')
 
-    def instance_info_cache_update(self, context, instance, values):
+    def instance_info_cache_update(self, context, instance, values,
+                                   update_cells=True):
         instance_p = jsonutils.to_primitive(instance)
         msg = self.make_msg('instance_info_cache_update',
                             instance=instance_p,
-                            values=values)
+                            values=values,
+                            update_cells=update_cells)
         return self.call(context, msg, version='1.26')
 
     def service_create(self, context, values):
