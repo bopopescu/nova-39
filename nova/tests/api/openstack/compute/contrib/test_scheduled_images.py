@@ -16,7 +16,9 @@
 from nova.api.openstack import compute
 from nova.api.openstack.compute.contrib import scheduled_images
 from nova.compute import api as compute_api
+from nova import exception
 from nova.openstack.common import jsonutils
+from nova.openstack.common import policy
 from nova import test
 from nova.tests.api.openstack import fakes
 from nova.tests import fake_scheduled_images
@@ -24,6 +26,88 @@ from qonos.qonosclient import client as qonos_client
 
 
 OS_SI = 'OS-SI:image_schedule'
+
+
+class ScheduledImagesPolicyTest(test.TestCase):
+    def setUp(self):
+        super(ScheduledImagesPolicyTest, self).setUp()
+        self.controller = scheduled_images.ScheduledImagesController()
+        self.uuid_1 = 'b04ac9cd-f78f-4376-8606-99f3bdb5d0ae'
+        self.uuid_2 = '6b8b2aa4-ae7b-4cd0-a7f9-7fa6d5b0195a'
+        uuids = [self.uuid_1, self.uuid_2]
+        fake_scheduled_images.stub_out_instance(self.stubs, uuids)
+        fake_scheduled_images.stub_out_instance_system_metadata(self.stubs,
+                                                                self.uuid_1)
+        fake_scheduled_images.stub_out_qonos_client(self.stubs)
+
+        def fake_get(self, context, instance_uuid):
+            return {'uuid': instance_uuid, 'project_id': context.project_id}
+
+        self.stubs.Set(compute_api.API, 'get', fake_get)
+
+    def test_get_image_schedule_without_admin_context(self):
+        rules = policy.Rules({'compute:get': policy.parse_rule(''),
+                              'compute_extension:scheduled_images:index':
+                               policy.parse_rule('is_admin:True')})
+        policy.set_rules(rules)
+        url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1
+        req = fakes.HTTPRequest.blank(url)
+        self.assertRaises(exception.NotAuthorized, self.controller.index, req,
+                          self.uuid_1)
+
+    def test_get_image_schedule_with_admin_context(self):
+        rules = policy.Rules({'compute:get': policy.parse_rule(''),
+                              'compute_extension:scheduled_images:index':
+                               policy.parse_rule('is_admin:True')})
+        policy.set_rules(rules)
+        url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1
+        req = fakes.HTTPRequest.blank(url, use_admin_context=True)
+        res = self.controller.index(req, self.uuid_1)
+        self.assertEqual(res, {"image_schedule": {"retention": 6}})
+
+    def test_post_image_schedule_without_admin_context(self):
+        rules = policy.Rules({'compute:get': policy.parse_rule(''),
+                              'compute_extension:scheduled_images:create':
+                               policy.parse_rule('is_admin:True')})
+        policy.set_rules(rules)
+        url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1
+        req = fakes.HTTPRequest.blank(url)
+        body = {"image_schedule": {"retention": 7}}
+        self.assertRaises(exception.NotAuthorized, self.controller.create,
+                          req, self.uuid_1, body)
+
+    def test_post_image_schedule_with_admin_context(self):
+        rules = policy.Rules({'compute:get': policy.parse_rule(''),
+                              'compute_extension:scheduled_images:create':
+                               policy.parse_rule('is_admin:True')})
+        policy.set_rules(rules)
+        url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1
+        req = fakes.HTTPRequest.blank(url, use_admin_context=True)
+        body = {"image_schedule": {"retention": 7}}
+        res = self.controller.create(req, self.uuid_1, body)
+        self.assertEqual(res, {"image_schedule": {"retention": 7}})
+
+    def test_delete_image_schedule_without_admin_context(self):
+        rules = policy.Rules({'compute:get': policy.parse_rule(''),
+                              'compute_extension:scheduled_images:delete':
+                               policy.parse_rule('is_admin:True')})
+        policy.set_rules(rules)
+        url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1
+        req = fakes.HTTPRequest.blank(url)
+        req.method = 'DELETE'
+        self.assertRaises(exception.NotAuthorized, self.controller.delete,
+                          req, self.uuid_1)
+
+    def test_delete_image_schedule_admin_context(self):
+        rules = policy.Rules({'compute:get': policy.parse_rule(''),
+                              'compute_extension:scheduled_images:delete':
+                               policy.parse_rule('is_admin:True')})
+        policy.set_rules(rules)
+        url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1
+        req = fakes.HTTPRequest.blank(url, use_admin_context=True)
+        req.method = 'DELETE'
+        res = self.controller.delete(req, self.uuid_1)
+        self.assertEqual(res.status_int, 202)
 
 
 class ScheduledImagesTest(test.TestCase):
@@ -37,6 +121,11 @@ class ScheduledImagesTest(test.TestCase):
         fake_scheduled_images.stub_out_instance_system_metadata(self.stubs,
                                                                 self.uuid_1)
         fake_scheduled_images.stub_out_qonos_client(self.stubs)
+
+        def fake_get(self, context, instance_uuid):
+            return {'uuid': instance_uuid, 'project_id': context.project_id}
+
+        self.stubs.Set(compute_api.API, 'get', fake_get)
 
     def test_get_image_schedule(self):
         url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1

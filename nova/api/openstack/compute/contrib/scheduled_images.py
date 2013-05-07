@@ -85,7 +85,8 @@ class ScheduledImagesController(wsgi.Controller):
     def index(self, req, server_id):
         """Returns the retention value for the schedule."""
         context = req.environ['nova.context']
-        authorize(context, action='index')
+        instance = self.compute_api.get(context, server_id)
+        authorize(context, target=instance, action='index')
 
         server = {'uuid': server_id}
         metadata = self.compute_api.get_instance_system_metadata(context,
@@ -117,7 +118,8 @@ class ScheduledImagesController(wsgi.Controller):
     def delete(self, req, server_id):
         """Deletes a Image Schedule."""
         context = req.environ['nova.context']
-        authorize(context, action='delete')
+        instance = self.compute_api.get(context, server_id)
+        authorize(context, target=instance, action='delete')
 
         try:
             params = {'instance_id': server_id, 'action': 'snapshot'}
@@ -213,7 +215,8 @@ class ScheduledImagesController(wsgi.Controller):
     def create(self, req, server_id, body):
         """Creates a new Image Schedule."""
         context = req.environ['nova.context']
-        authorize(context, action='create')
+        instance = self.compute_api.get(context, server_id)
+        authorize(context, target=instance, action='create')
 
         retention = self.is_valid_body(body)
 
