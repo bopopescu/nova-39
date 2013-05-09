@@ -365,20 +365,20 @@ class ScheduledImagesFilterController(wsgi.Controller):
                 instance = req.get_db_instance(id)
                 self.compute_api.delete_instance_system_metadata(context,
                         instance, to_delete_meta)
-            params = {'action': 'snapshot', 'instance_id': id}
-            try:
-                schedules = self.client.list_schedules(filter_args=params)
-                for schedule in schedules:
-                    try:
-                        self.client.delete_schedule(schedule['id'])
-                    except qonos_exc.NotFound:
-                        msg = (_('Image schedule %s not found when trying to '
-                                 'delete.') % schedule['id'])
-                        LOG.warn(msg)
-            except qonos_exc.ConnRefused:
-                msg = _('QonoS API is not reachable, delete on server did not '
-                        'delete QonoS schedules')
-                LOG.warn(msg)
+                params = {'action': 'snapshot', 'instance_id': id}
+                try:
+                    schedules = self.client.list_schedules(filter_args=params)
+                    for schedule in schedules:
+                        try:
+                            self.client.delete_schedule(schedule['id'])
+                        except qonos_exc.NotFound:
+                            msg = (_('Image schedule %s not found when trying to '
+                                     'delete.') % schedule['id'])
+                            LOG.warn(msg)
+                except qonos_exc.ConnRefused:
+                    msg = _('QonoS API is not reachable, delete on server did not '
+                            'delete QonoS schedules')
+                    LOG.warn(msg)
 
 
 class Scheduled_images(extensions.ExtensionDescriptor):
