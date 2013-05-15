@@ -78,7 +78,7 @@ class AICLibConnection(object):
     def get_securityprofile(self, tenant_id=None,
                             securityprofile_id=None):
         errormsg = 'Either tenant_id or securityprofile_id is required'
-        if tenant_id is None or securityprofile_id is None:
+        if tenant_id is None and securityprofile_id is None:
             raise TypeError(errormsg)
 
         if securityprofile_id is not None:
