@@ -425,3 +425,9 @@ class MelangeConnection(object):
                 params[key] = value
         res = json.loads(self.get(url, params=params))
         return res['interfaces']
+
+    def set_interface_vif_id_on_device(self, vif_id, vif_on_device):
+        url = 'ipam/interfaces/%s' % vif_id
+        res = json.loads(self.post(url,
+                                   body=dict(vif_on_device=vif_on_device)))
+        return res['interface']

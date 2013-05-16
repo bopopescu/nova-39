@@ -204,7 +204,18 @@ class QuantumManager(manager.SchedulerDependentManager):
                 exc = exception.VirtualInterfaceCleanupException
                 raise exc(reason=str(e))
 
-    def _deallocate_port(self, tenant_id, network_id, interface_id):
+    def _deallocate_port(self, tenant_id, network_id, interface_id,
+                         port_id=None):
+        # NOTE(jkoelker) First attempt to use the melange stored port_id
+        if port_id:
+            try:
+                self.q_conn.detach_and_delete_port(tenant_id, network_id,
+                                                   port_id)
+                return
+            except Exception:
+                pass
+
+        # NOTE(jkoelker) Fall back to looking it up in quantum first
         port_id = self.q_conn.get_port_by_attachment(tenant_id,
                                                      network_id,
                                                      interface_id)
@@ -431,10 +442,15 @@ class QuantumManager(manager.SchedulerDependentManager):
     def deallocate_interface_for_instance(self, context, instance_id,
                                           interface_id, **kwargs):
         vif = self.m_conn.get_interface_for_device(instance_id, interface_id)
+        port_id = vif.get('vif_id_on_device')
+        if not port_id:
+            port_id = None
+
         for ip in vif["ip_addresses"]:
             tenant_id = ip["ip_block"]["tenant_id"]
             network_id = ip["ip_block"]["network_id"]
-            self._deallocate_port(tenant_id, network_id, interface_id)
+            self._deallocate_port(tenant_id, network_id, interface_id,
+                                  port_id=port_id)
         self.m_conn.deallocate_interface_for_instance(context.project_id,
                                                       instance_id,
                                                       interface_id)
@@ -524,6 +540,13 @@ class QuantumManager(manager.SchedulerDependentManager):
                                                      network_id,
                                                      vif['id'],
                                                      **kwargs)
+
+        # NOTE(jkoelker) Attempt to let melange store the port_id
+        try:
+            self.m_conn.set_interface_vif_id_on_device(vif['id'], port_id)
+        except Exception:
+            msg = _('Could not set vif_id_on_device for vif: %(id)s')
+            LOG.exception(msg % vif)
 
         if rackconnect and network_id == self._rackconnect_servicenet:
             self._can_haz_rc_policy_for_port(port_id, tenant_id, instance_id)
@@ -842,9 +865,13 @@ class QuantumManager(manager.SchedulerDependentManager):
             network_tenant_id = network_tenant_ids.pop()
             network_id = network_ids.pop()
 
+            port_id = vif.get('vif_id_on_device')
+            if not port_id:
+                port_id = None
+
             try:
                 self._deallocate_port(network_tenant_id, network_id,
-                                      vif['id'])
+                                      vif['id'], port_id=port_id)
             except Exception:
                 # except anything so the rest of deallocate can succeed
                 extra = {'instance_id': instance_id,
