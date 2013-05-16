@@ -37,10 +37,10 @@ from qonos.qonosclient import client
 from qonos.qonosclient import exception as qonos_exc
 
 
-ALIAS = 'os-si-image-schedule'
+ALIAS = 'rax-si-image-schedule'
 XMLNS_SI = 'http://docs.openstack.org/servers/api/ext/scheduled_images/v1.0'
-XML_SI_PREFIX = 'OS-SI'
-SI_METADATA_KEY = 'OS-SI:image_schedule'
+XML_SI_PREFIX = 'RAX-SI'
+SI_METADATA_KEY = 'RAX-SI:image_schedule'
 LOG = logging.getLogger(__name__)
 authorize = extensions.extension_authorizer('compute', 'scheduled_images')
 authorize_filter = extensions.soft_extension_authorizer('compute',
@@ -274,7 +274,7 @@ class ScheduledImagesFilterController(wsgi.Controller):
         self.compute_api = compute.API()
 
     def _get_meta_from_cache(self, req, server_id):
-        """Method to get OS-SI:image_schedule system metadata from
+        """Method to get RAX-SI:image_schedule system metadata from
            Controller cache.
         """
         instance = req.get_db_instance(server_id)
@@ -282,7 +282,7 @@ class ScheduledImagesFilterController(wsgi.Controller):
         return meta.get(SI_METADATA_KEY)
 
     def _check_si_opt(self, req):
-        """Method to check validity of query param OS-SI:image_schedule."""
+        """Method to check validity of query param RAX-SI:image_schedule."""
         search_opts = {}
         search_opts.update(req.GET)
         if SI_METADATA_KEY in search_opts:
@@ -292,15 +292,15 @@ class ScheduledImagesFilterController(wsgi.Controller):
             elif search_opt.lower() == 'false':
                 return False
             else:
-                msg = _('Bad value for query parameter OS-SI:image_schedule, '
+                msg = _('Bad value for query parameter RAX-SI:image_schedule, '
                         'use True or False')
                 raise exc.HTTPBadRequest(explanation=msg)
 
     def _filter_servers_on_si(self, req, servers, must_have_si):
         """This method is used to filter out the servers which either have
-           OS-SI:image_schedule in their system metadata or not, if filter is
+           RAX-SI:image_schedule in their system metadata or not, if filter is
            specified in the query parameter. If filter is not specified, then
-           all the servers are returned after adding the OS-SI:image_schedule
+           all the servers are returned after adding the RAX-SI:image_schedule
            system metadata on those servers for which it exists.
         """
         if must_have_si is None:
@@ -308,17 +308,17 @@ class ScheduledImagesFilterController(wsgi.Controller):
 
         for server in reversed(servers):
             #NOTE(nikhil): we need to remove all those servers from the servers
-            #dict for which either OS-SI:image_schedule does not exists and the
-            #query filter is set to OS-SI:image_schedule=True or
-            #OS-SI:image_schedule exists and query filter is set to
-            #OS-SI:image_schedule=False
+            #dict for which either RAX-SI:image_schedule does not exists and
+            #the query filter is set to RAX-SI:image_schedule=True or
+            #RAX-SI:image_schedule exists and query filter is set to
+            #RAX-SI:image_schedule=False
             si_meta_str = self._get_meta_from_cache(req, server['id'])
             si_meta_exists = (si_meta_str is not None)
             if must_have_si != si_meta_exists:
                 servers.remove(server)
 
     def _add_si_metadata(self, req, servers):
-        """Adds system metadata OS-SI:image_schedule to those servers for
+        """Adds system metadata RAX-SI:image_schedule to those servers for
            which it exists.
         """
         must_have_si = self._check_si_opt(req)
@@ -390,7 +390,7 @@ class Scheduled_images(extensions.ExtensionDescriptor):
     updated = "2013-03-20T00:00:00+00:00"
 
     def get_resources(self):
-        ext = extensions.ResourceExtension('os-si-image-schedule',
+        ext = extensions.ResourceExtension('rax-si-image-schedule',
                       ScheduledImagesController(),
                       collection_actions={'delete': 'DELETE'},
                       parent=dict(

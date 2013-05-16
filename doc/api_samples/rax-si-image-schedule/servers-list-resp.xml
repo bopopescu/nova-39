@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<servers xmlns:RAX-SI="http://docs.openstack.org/servers/api/ext/scheduled_images/v1.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns="http://docs.openstack.org/compute/api/v1.1">
+  <server name="new-server-test" id="e76c99dc-236b-47a1-afc2-1fd5c2dbbe4d">
+    <atom:link href="http://openstack.example.com/v2/openstack/servers/e76c99dc-236b-47a1-afc2-1fd5c2dbbe4d" rel="self"/>
+    <atom:link href="http://openstack.example.com/openstack/servers/e76c99dc-236b-47a1-afc2-1fd5c2dbbe4d" rel="bookmark"/>
+    <RAX-SI:image_schedule>
+      <retention>7</retention>
+    </RAX-SI:image_schedule>
+  </server>
+</servers>

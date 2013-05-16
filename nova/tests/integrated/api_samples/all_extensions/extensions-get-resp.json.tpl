@@ -489,7 +489,7 @@
             "updated": "%(timestamp)s"
         },
         {
-            "alias": "os-si-image-schedule",
+            "alias": "rax-si-image-schedule",
             "description": "%(text)s",
             "links": [],
             "name": "ScheduledImages",

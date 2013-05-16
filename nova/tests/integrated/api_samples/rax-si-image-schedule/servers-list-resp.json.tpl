@@ -1,7 +1,7 @@
 {
     "servers": [
         {
-            "OS-SI:image_schedule": {"retention": %(int)s},
+            "RAX-SI:image_schedule": {"retention": %(int)s},
             "id": "%(id)s",
             "links": [
                 {

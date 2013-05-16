@@ -25,7 +25,7 @@ from nova.tests import fake_scheduled_images
 from qonos.qonosclient import client as qonos_client
 
 
-OS_SI = 'OS-SI:image_schedule'
+OS_SI = 'RAX-SI:image_schedule'
 
 
 class ScheduledImagesPolicyTest(test.TestCase):
@@ -128,20 +128,20 @@ class ScheduledImagesTest(test.TestCase):
         self.stubs.Set(compute_api.API, 'get', fake_get)
 
     def test_get_image_schedule(self):
-        url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1
+        url = '/fake/servers/%s/rax-si-image-schedule' % self.uuid_1
         req = fakes.HTTPRequest.blank(url)
         res = self.controller.index(req, self.uuid_1)
         self.assertEqual(res, {"image_schedule": {"retention": 6}})
 
     def test_post_image_schedule(self):
-        url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1
+        url = '/fake/servers/%s/rax-si-image-schedule' % self.uuid_1
         req = fakes.HTTPRequest.blank(url)
         body = {"image_schedule": {"retention": 7}}
         res = self.controller.create(req, self.uuid_1, body)
         self.assertEqual(res, {"image_schedule": {"retention": 7}})
 
     def test_delete_image_schedule(self):
-        url = '/fake/servers/%s/os-si-image-schedule' % self.uuid_1
+        url = '/fake/servers/%s/rax-si-image-schedule' % self.uuid_1
         req = fakes.HTTPRequest.blank(url)
         req.method = 'DELETE'
         res = self.controller.delete(req, self.uuid_1)
@@ -175,7 +175,7 @@ class ScheduledImagesFilterTest(test.TestCase):
             self.assert_(OS_SI not in dict_)
 
     def test_index_servers_with_true_query(self):
-        query = 'OS-SI:image_schedule=True'
+        query = 'RAX-SI:image_schedule=True'
         req = fakes.HTTPRequest.blank('/fake/servers?%s' % query)
         res = req.get_response(self.app)
         servers = jsonutils.loads(res.body)['servers']
@@ -184,7 +184,7 @@ class ScheduledImagesFilterTest(test.TestCase):
             self.assertScheduledImages(server, 7, is_present=True)
 
     def test_index_servers_with_false_query(self):
-        query = 'OS-SI:image_schedule=False'
+        query = 'RAX-SI:image_schedule=False'
         req = fakes.HTTPRequest.blank('/fake/servers?%s' % query)
         res = req.get_response(self.app)
         servers = jsonutils.loads(res.body)['servers']
@@ -211,7 +211,7 @@ class ScheduledImagesFilterTest(test.TestCase):
                 self.assertScheduledImages(server, 6, is_present=False)
 
     def test_detail_servers_with_true_query(self):
-        query = 'OS-SI:image_schedule=True'
+        query = 'RAX-SI:image_schedule=True'
         req = fakes.HTTPRequest.blank('/fake/servers/detail?%s' % query)
         res = req.get_response(self.app)
         servers = jsonutils.loads(res.body)['servers']
@@ -220,7 +220,7 @@ class ScheduledImagesFilterTest(test.TestCase):
             self.assertScheduledImages(server, 7, is_present=True)
 
     def test_detail_servers_with_false_query(self):
-        query = 'OS-SI:image_schedule=False'
+        query = 'RAX-SI:image_schedule=False'
         req = fakes.HTTPRequest.blank('/fake/servers/detail?%s' % query)
         res = req.get_response(self.app)
         servers = jsonutils.loads(res.body)['servers']

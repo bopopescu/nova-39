@@ -1,0 +1,21 @@
+{
+    "servers": [
+        {
+            "RAX-SI:image_schedule": {
+                "retention": 7
+            },
+            "id": "70a30dd1-e1e2-4b75-8c8c-a233c3acf46a",
+            "links": [
+                {
+                    "href": "http://openstack.example.com/v2/openstack/servers/70a30dd1-e1e2-4b75-8c8c-a233c3acf46a",
+                    "rel": "self"
+                },
+                {
+                    "href": "http://openstack.example.com/openstack/servers/70a30dd1-e1e2-4b75-8c8c-a233c3acf46a",
+                    "rel": "bookmark"
+                }
+            ],
+            "name": "new-server-test"
+        }
+    ]
+}
