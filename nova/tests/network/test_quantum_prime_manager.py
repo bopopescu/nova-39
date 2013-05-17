@@ -51,6 +51,7 @@ def _vif_helper(tenant_id, network_uuid, mac_offset=0, vif_id=None,
     network_name = name or 'net%s' % network_uuid
     return {'id': vif_id or str(uuidutils.generate_uuid()),
             'mac_address': '00:00:00:00:00:%02d' % mac_offset,
+            'vif_id_on_device': 8003,
             'ip_addresses': [
                 {'address': _ip_addresses_helper(1)[0],
                  'ip_block': {'tenant_id': tenant_id,
@@ -1164,6 +1165,25 @@ class Quantum2ManagerDeallocatePort(test.TestCase):
                                               interface_id=1)
             self.assertEqual(patch.called, True)
 
+    def test_deallocate_port_should_use_the_port_passed_in(self):
+        _test = self
+        def mock_detach_and_delete_port(self, tenant_id, network_id, port_id):
+            print(port_id)
+            _test.assertEqual(8033, port_id)
+
+        self.stubs.Set(quantum_connection.QuantumClientConnection,
+                       'detach_and_delete_port',
+                       mock_detach_and_delete_port)
+        with mock.patch(
+                'nova.network.quantum2.quantum_connection.'
+                'QuantumClientConnection.get_port_by_attachment'
+        ) as patch:
+            self.net_manager._deallocate_port(self.tenant_id,
+                                              self.network_uuid,
+                                              interface_id=1,
+                                              port_id=8033)
+            self.assertEqual(patch.called, False)
+
 
 class Quantum2ManagerVifFromNetwork(test.TestCase):
     def setUp(self):
@@ -1365,12 +1385,17 @@ class Quantum2VirtualInterfaces(test.TestCase):
                           network_id)
 
     def test_delete_virtual_interface(self):
+        _test = self
         instance_id = 1
         project_id = "openstack"
         network_id = uuid.uuid4()
         vif = _vif_helper(project_id, network_id)
+        def mock_deallocate_port(self, tenant_id, network_id, interface_id,
+                                 port_id):
+            _test.assertEqual(vif["vif_id_on_device"], port_id)
+
         self.stubs.Set(manager.QuantumManager, "_deallocate_port",
-                       self._dummy)
+                       mock_deallocate_port)
         self.stubs.Set(melange_connection.MelangeConnection,
                        "get_interface_for_device",
                        self._get_vif(vif))

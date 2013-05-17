@@ -206,22 +206,12 @@ class QuantumManager(manager.SchedulerDependentManager):
 
     def _deallocate_port(self, tenant_id, network_id, interface_id,
                          port_id=None):
-        # NOTE(jkoelker) First attempt to use the melange stored port_id
+        if port_id is None:
+            port_id = self.q_conn.get_port_by_attachment(tenant_id,
+                                                         network_id,
+                                                         interface_id)
         if port_id:
-            try:
-                self.q_conn.detach_and_delete_port(tenant_id, network_id,
-                                                   port_id)
-                return
-            except Exception:
-                pass
-
-        # NOTE(jkoelker) Fall back to looking it up in quantum first
-        port_id = self.q_conn.get_port_by_attachment(tenant_id,
-                                                     network_id,
-                                                     interface_id)
-        if port_id:
-            self.q_conn.detach_and_delete_port(tenant_id, network_id,
-                                               port_id)
+            self.q_conn.detach_and_delete_port(tenant_id, network_id, port_id)
         else:
             LOG.error(_("Unable to find port with attachment: %s") %
                       interface_id)
